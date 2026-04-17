@@ -3,7 +3,8 @@
 This directory contains the official Zig binding for SlateDB.
 
 This binding is still early. It is a handwritten Zig wrapper over the existing
-UniFFI C ABI and shared library.
+UniFFI C ABI and shared library. It supports both blocking helpers and
+future-based async calls built on Zig `std.Io`.
 
 ## What Works Today
 
@@ -13,16 +14,21 @@ UniFFI C ABI and shared library.
 - includes a first blocking database path
 - supports `ObjectStore.resolve`
 - supports `DbBuilder.init`
+- supports `DbBuilder.build`
 - supports `DbBuilder.buildBlocking`
 - supports `Db.status`
+- supports `Db.put`
 - supports `Db.putBlocking`
+- supports `Db.get`
 - supports `Db.getBlocking`
+- supports `Db.delete`
 - supports `Db.deleteBlocking`
+- supports `Db.shutdown`
 - supports `Db.shutdownBlocking`
 
 ## What Is Next
 
-- native Zig `async/await` wrappers
+- wider async API coverage
 - wider API coverage to match the Go binding
 - more tests ported from the other bindings
 
@@ -65,7 +71,36 @@ If the shared library lives somewhere else, pass:
 zig build test -Dslatedb-lib-dir=/absolute/path/to/target/debug
 ```
 
+## Async Style
+
+With Zig `0.16.0`, the async path uses `std.Io.Future` and `future.await(io)`.
+
+Example:
+
+```zig
+var threaded = std.Io.Threaded.init(std.heap.smp_allocator, .{});
+defer threaded.deinit();
+const io = threaded.io();
+
+var store = try slatedb.ObjectStore.resolve("memory:///");
+defer store.deinit();
+
+var builder = try slatedb.DbBuilder.init("zig-demo", &store);
+defer builder.deinit();
+
+var build_future = builder.build(io);
+var db = try build_future.await(io);
+defer db.deinit();
+
+var put_future = db.put(io, "hello", "world");
+_ = try put_future.await(io);
+
+var get_future = db.get(io, std.heap.smp_allocator, "hello");
+const value = try get_future.await(io);
+defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
+```
+
 ## Current Status
 
-The first blocking database path is implemented and covered by Zig smoke tests.
-The binding is not feature-complete yet.
+The first blocking and future-based database path is implemented and covered by
+Zig smoke tests. The binding is not feature-complete yet.
