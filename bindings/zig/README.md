@@ -52,6 +52,10 @@ Database:
 - supports `Db.deleteBlocking`
 - supports `Db.deleteWithOptions`
 - supports `Db.deleteWithOptionsBlocking`
+- supports `Db.merge`
+- supports `Db.mergeBlocking`
+- supports `Db.mergeWithOptions`
+- supports `Db.mergeWithOptionsBlocking`
 - supports `Db.metrics`
 - supports `Db.snapshot`
 - supports `Db.snapshotBlocking`
@@ -111,6 +115,10 @@ Snapshots and transactions:
 - supports `DbTransaction.getBlocking`
 - supports `DbTransaction.getWithOptions`
 - supports `DbTransaction.getWithOptionsBlocking`
+- supports `DbTransaction.merge`
+- supports `DbTransaction.mergeBlocking`
+- supports `DbTransaction.mergeWithOptions`
+- supports `DbTransaction.mergeWithOptionsBlocking`
 - supports `DbTransaction.getKeyValue`
 - supports `DbTransaction.getKeyValueBlocking`
 - supports `DbTransaction.getKeyValueWithOptions`
@@ -170,6 +178,8 @@ Iterators, batches, and exported types:
 - exports `WriteOptions`
 - exports `WalFileMetadata`
 - supports `WriteBatch.init`
+- supports `WriteBatch.merge`
+- supports `WriteBatch.mergeWithOptions`
 - supports `WriteBatch.put`
 - supports `WriteBatch.putWithOptions`
 - supports `WriteBatch.delete`
@@ -276,7 +286,7 @@ defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 ## Current Status
 
 The Zig binding now covers the main async and blocking database path, option
-structs and option-based methods, typed call error details, reader reads and
-scans, write batches, snapshots, transactions, iterators, the built-in integer
-metrics snapshot, WAL inspection, and Linux CI. It is still behind the Go
-binding for custom metrics recorders and callbacks.
+structs and option-based methods, typed call error details, merge writes,
+reader reads and scans, write batches, snapshots, transactions, iterators, the
+built-in integer metrics snapshot, WAL inspection, and Linux CI. It is still
+behind the Go binding for custom metrics recorders and callbacks.
