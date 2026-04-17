@@ -21,6 +21,11 @@ pub const AsyncRuntime = struct {
     }
 };
 
+pub const ExpectedRow = struct {
+    key: []const u8,
+    value: []const u8,
+};
+
 pub const TestDb = struct {
     store: slatedb.ObjectStore,
     builder: slatedb.DbBuilder,
@@ -76,3 +81,29 @@ pub const TestDb = struct {
         self.store.deinit();
     }
 };
+
+pub fn expectRows(
+    io: std.Io,
+    iter: *slatedb.DbIterator,
+    expected: []const ExpectedRow,
+) !void {
+    for (expected) |want| {
+        var next_future = iter.next(io, std.testing.allocator);
+        const maybe_row = try next_future.await(io);
+        try std.testing.expect(maybe_row != null);
+
+        var row = maybe_row.?;
+        defer row.deinit(std.testing.allocator);
+
+        try std.testing.expectEqualSlices(u8, want.key, row.key);
+        try std.testing.expectEqualSlices(u8, want.value, row.value);
+    }
+
+    var end_future = iter.next(io, std.testing.allocator);
+    const end_row = try end_future.await(io);
+    if (end_row) |row_value| {
+        var row = row_value;
+        defer row.deinit(std.testing.allocator);
+        return error.TestUnexpectedResult;
+    }
+}
