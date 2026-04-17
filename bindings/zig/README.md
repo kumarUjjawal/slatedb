@@ -29,17 +29,33 @@ future-based async calls built on Zig `std.Io`.
 - supports `Db.writeBlocking`
 - supports `Db.shutdown`
 - supports `Db.shutdownBlocking`
+- supports `Db.begin`
+- supports `Db.beginBlocking`
 - supports `DbSnapshot.get`
 - supports `DbSnapshot.getBlocking`
+- supports `DbTransaction.id`
+- supports `DbTransaction.seqnum`
+- supports `DbTransaction.put`
+- supports `DbTransaction.putBlocking`
+- supports `DbTransaction.get`
+- supports `DbTransaction.getBlocking`
+- supports `DbTransaction.commit`
+- supports `DbTransaction.commitBlocking`
+- supports `DbTransaction.rollback`
+- supports `DbTransaction.rollbackBlocking`
 - supports `WriteBatch.init`
 - supports `WriteBatch.put`
 - supports `WriteBatch.delete`
 
 ## What Is Next
 
-- wider async API coverage
-- wider API coverage to match the Go binding
-- more tests ported from the other bindings
+- scan and iterator support
+- reader support
+- richer typed error details
+- metrics support
+- logging and merge-operator callbacks
+- WAL reader support
+- CI coverage for the Zig binding
 
 ## Zig Version
 
@@ -111,5 +127,6 @@ defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 
 ## Current Status
 
-The first blocking and future-based database path is implemented and covered by
-Zig smoke tests. The binding is not feature-complete yet.
+The Zig binding now covers the core async and blocking database path, write
+batches, snapshots, and basic transactions. It is still behind the Go binding
+for scans, reader APIs, callbacks, metrics, WAL access, and CI coverage.
