@@ -1,5 +1,6 @@
 const std = @import("std");
 const codec = @import("codec.zig");
+const db_snapshot = @import("db_snapshot.zig");
 const ffi = @import("ffi.zig");
 const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
@@ -237,6 +238,19 @@ pub const Db = struct {
         return rust_future.asyncVoid(io, &self.handle, future);
     }
 
+    pub fn snapshot(self: *Db, io: std.Io) std.Io.Future(rust_call.CallError!db_snapshot.DbSnapshot) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!db_snapshot.DbSnapshot, call_err);
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!db_snapshot.DbSnapshot, call_err);
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_snapshot(db_handle);
+        return io.async(waitSnapshotTask, .{ &self.handle, future });
+    }
+
     pub fn write(
         self: *Db,
         io: std.Io,
@@ -271,6 +285,17 @@ pub const Db = struct {
 
         const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_shutdown(db_handle);
         try rust_future.waitVoid(future);
+    }
+
+    pub fn snapshotBlocking(self: *Db) rust_call.CallError!db_snapshot.DbSnapshot {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_snapshot(db_handle);
+        const raw_snapshot = try rust_future.waitPointer(future);
+        return db_snapshot.DbSnapshot.fromRaw(raw_snapshot);
     }
 
     pub fn writeBlocking(
@@ -363,4 +388,14 @@ fn waitWriteTask(
     const write_handle = try codec.decodeWriteHandle(&reader);
     try reader.finish();
     return write_handle;
+}
+
+fn waitSnapshotTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!db_snapshot.DbSnapshot {
+    defer owner.finishRustCall();
+
+    const raw_snapshot = try rust_future.waitPointer(handle);
+    return db_snapshot.DbSnapshot.fromRaw(raw_snapshot);
 }

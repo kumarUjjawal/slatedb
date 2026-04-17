@@ -118,3 +118,38 @@ test "Db async write batch" {
 
     try test_db.shutdownAsync(io);
 }
+
+test "Db async snapshot read stays stable" {
+    var runtime = support.AsyncRuntime.init();
+    defer runtime.deinit();
+    const io = runtime.io();
+
+    var test_db = try support.TestDb.initAsync(io);
+    defer test_db.deinit();
+
+    var old_put_future = test_db.db.put(io, "snapshot", "old");
+    _ = try old_put_future.await(io);
+
+    var snapshot_future = test_db.db.snapshot(io);
+    var snapshot = try snapshot_future.await(io);
+    defer snapshot.deinit();
+
+    var new_put_future = test_db.db.put(io, "snapshot", "new");
+    _ = try new_put_future.await(io);
+
+    var snapshot_get_future = snapshot.get(io, std.testing.allocator, "snapshot");
+    const snapshot_value = try snapshot_get_future.await(io);
+    defer if (snapshot_value) |bytes| std.testing.allocator.free(bytes);
+
+    try std.testing.expect(snapshot_value != null);
+    try std.testing.expectEqualSlices(u8, "old", snapshot_value.?);
+
+    var live_get_future = test_db.db.get(io, std.testing.allocator, "snapshot");
+    const live_value = try live_get_future.await(io);
+    defer if (live_value) |bytes| std.testing.allocator.free(bytes);
+
+    try std.testing.expect(live_value != null);
+    try std.testing.expectEqualSlices(u8, "new", live_value.?);
+
+    try test_db.shutdownAsync(io);
+}

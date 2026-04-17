@@ -5,6 +5,7 @@ pub const WriteHandle = @import("db.zig").WriteHandle;
 pub const ObjectStore = @import("object_store.zig").ObjectStore;
 pub const DbBuilder = @import("builder.zig").DbBuilder;
 pub const Db = @import("db.zig").Db;
+pub const DbSnapshot = @import("db_snapshot.zig").DbSnapshot;
 pub const WriteBatch = @import("write_batch.zig").WriteBatch;
 
 test {
@@ -15,5 +16,6 @@ test {
     _ = @import("object_store.zig");
     _ = @import("builder.zig");
     _ = @import("db.zig");
+    _ = @import("db_snapshot.zig");
     _ = @import("write_batch.zig");
 }

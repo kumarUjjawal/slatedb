@@ -18,8 +18,10 @@ const checksums = struct {
     const method_db_get = 50068;
     const method_db_put = 59996;
     const method_db_shutdown = 43377;
+    const method_db_snapshot = 13313;
     const method_db_status = 55824;
     const method_db_write = 13969;
+    const method_dbsnapshot_get = 37663;
     const method_writebatch_delete = 37032;
     const method_writebatch_put = 35694;
 };
@@ -79,6 +81,11 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_db_shutdown(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_snapshot",
+        checksums.method_db_snapshot,
+        c.uniffi_slatedb_uniffi_checksum_method_db_snapshot(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_status",
         checksums.method_db_status,
         c.uniffi_slatedb_uniffi_checksum_method_db_status(),
@@ -87,6 +94,11 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_db_write",
         checksums.method_db_write,
         c.uniffi_slatedb_uniffi_checksum_method_db_write(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get",
+        checksums.method_dbsnapshot_get,
+        c.uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_writebatch_delete",
