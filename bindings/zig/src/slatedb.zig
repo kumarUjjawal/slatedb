@@ -20,6 +20,8 @@ pub const LogCallback = @import("logging.zig").LogCallback;
 pub const LogLevel = @import("logging.zig").LogLevel;
 pub const LogRecord = @import("logging.zig").LogRecord;
 pub const initLogging = @import("logging.zig").initLogging;
+pub const MergeOperator = @import("merge_operator.zig").MergeOperator;
+pub const MergeOperatorResult = @import("merge_operator.zig").MergeOperatorResult;
 pub const ffi = @import("ffi.zig");
 pub const WriteHandle = @import("types.zig").WriteHandle;
 pub const KeyRange = @import("types.zig").KeyRange;
@@ -50,6 +52,7 @@ test {
     _ = @import("spin_lock.zig");
     _ = @import("metrics.zig");
     _ = @import("logging.zig");
+    _ = @import("merge_operator.zig");
     _ = @import("object_store.zig");
     _ = @import("builder.zig");
     _ = @import("db.zig");

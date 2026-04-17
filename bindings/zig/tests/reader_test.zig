@@ -54,6 +54,29 @@ const SeededReader = struct {
     }
 };
 
+fn concatMerge(
+    context: *anyopaque,
+    allocator: std.mem.Allocator,
+    key: []const u8,
+    existing_value: ?[]const u8,
+    operand: []const u8,
+) std.mem.Allocator.Error!slatedb.MergeOperatorResult {
+    _ = context;
+    _ = key;
+
+    const prefix_len = if (existing_value) |value| value.len else 0;
+    const merged = try allocator.alloc(u8, prefix_len + operand.len);
+
+    if (existing_value) |value| {
+        @memcpy(merged[0..value.len], value);
+        @memcpy(merged[value.len..], operand);
+    } else {
+        @memcpy(merged, operand);
+    }
+
+    return .{ .value = merged };
+}
+
 test "DbReader build needs an existing database" {
     var runtime = support.AsyncRuntime.init();
     defer runtime.deinit();
@@ -146,6 +169,43 @@ test "DbReader async scan variants" {
 
     var shutdown_future = seeded_reader.reader.shutdown(io);
     try shutdown_future.await(io);
+}
+
+test "DbReader merge operator reads merge rows" {
+    var store = try slatedb.ObjectStore.resolve("memory:///");
+    defer store.deinit();
+
+    var db_builder = try slatedb.DbBuilder.init(support.test_db_path, &store);
+    defer db_builder.deinit();
+
+    var merge_context: u8 = 0;
+    const merge_operator = slatedb.MergeOperator{
+        .context = @ptrCast(&merge_context),
+        .merge_fn = concatMerge,
+    };
+    try db_builder.withMergeOperator(&merge_operator);
+
+    var db = try db_builder.buildBlocking();
+    defer db.deinit();
+
+    _ = try db.putBlocking("merge", "base");
+    _ = try db.mergeBlocking("merge", ":reader");
+    try db.flushWithOptionsBlocking(.{ .flush_type = .mem_table });
+
+    var reader_builder = try slatedb.DbReaderBuilder.init(support.test_db_path, &store);
+    defer reader_builder.deinit();
+    try reader_builder.withMergeOperator(&merge_operator);
+
+    var reader = try reader_builder.buildBlocking();
+    defer reader.deinit();
+
+    const value = try reader.getBlocking(std.testing.allocator, "merge");
+    defer if (value) |bytes| std.testing.allocator.free(bytes);
+    try std.testing.expect(value != null);
+    try std.testing.expectEqualSlices(u8, "base:reader", value.?);
+
+    try reader.shutdownBlocking();
+    try db.shutdownBlocking();
 }
 
 fn expectRows(

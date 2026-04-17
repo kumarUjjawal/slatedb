@@ -3,6 +3,7 @@ const config = @import("config.zig");
 const db = @import("db.zig");
 const db_reader = @import("db_reader.zig");
 const ffi = @import("ffi.zig");
+const merge_operator = @import("merge_operator.zig");
 const object_handle = @import("object_handle.zig");
 const object_store = @import("object_store.zig");
 const rust_buffer = @import("rust_buffer.zig");
@@ -76,6 +77,27 @@ pub const DbBuilder = struct {
         ffi.c.uniffi_slatedb_uniffi_fn_method_dbbuilder_with_wal_object_store(
             builder_handle,
             store_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
+    pub fn withMergeOperator(
+        self: *DbBuilder,
+        operator: *const merge_operator.MergeOperator,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const merge_operator_handle = try merge_operator.lowerMergeOperator(operator);
+        errdefer merge_operator.discardLoweredMergeOperator(merge_operator_handle);
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_dbbuilder_with_merge_operator(
+            builder_handle,
+            merge_operator_handle,
             &status,
         );
         try rust_call.checkStatus(status);
@@ -179,6 +201,27 @@ pub const DbReaderBuilder = struct {
         ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_with_wal_object_store(
             builder_handle,
             store_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
+    pub fn withMergeOperator(
+        self: *DbReaderBuilder,
+        operator: *const merge_operator.MergeOperator,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const merge_operator_handle = try merge_operator.lowerMergeOperator(operator);
+        errdefer merge_operator.discardLoweredMergeOperator(merge_operator_handle);
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_with_merge_operator(
+            builder_handle,
+            merge_operator_handle,
             &status,
         );
         try rust_call.checkStatus(status);

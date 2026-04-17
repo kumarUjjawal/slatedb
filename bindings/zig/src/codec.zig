@@ -221,7 +221,7 @@ fn decodeBytes(reader: *BufferReader) err.CallError![]const u8 {
     return reader.readSlice(@intCast(len));
 }
 
-fn decodeOwnedBytes(
+pub fn decodeOwnedBytes(
     allocator: std.mem.Allocator,
     reader: *BufferReader,
 ) (std.mem.Allocator.Error || err.CallError)![]u8 {

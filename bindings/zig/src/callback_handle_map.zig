@@ -14,7 +14,9 @@ pub fn HandleMap(comptime T: type) type {
             defer self.mutex.unlock();
 
             const handle = self.next_handle;
-            self.next_handle += 1;
+            // UniFFI uses odd handles for foreign callbacks so they do not
+            // overlap with Rust-backed object handles.
+            self.next_handle += 2;
             try self.handles.put(allocator, handle, value);
             return handle;
         }
@@ -31,4 +33,18 @@ pub fn HandleMap(comptime T: type) type {
             _ = self.handles.remove(handle);
         }
     };
+}
+
+test "callback handles stay odd" {
+    var handle_map: HandleMap(u8) = .{};
+    defer handle_map.handles.deinit(std.testing.allocator);
+
+    const first = try handle_map.insert(std.testing.allocator, 1);
+    defer handle_map.remove(first);
+
+    const second = try handle_map.insert(std.testing.allocator, 2);
+    defer handle_map.remove(second);
+
+    try std.testing.expectEqual(@as(u64, 1), first);
+    try std.testing.expectEqual(@as(u64, 3), second);
 }
