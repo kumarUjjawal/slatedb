@@ -60,6 +60,27 @@ pub const DbBuilder = struct {
         return db.Db.fromRaw(raw_db);
     }
 
+    pub fn withWalObjectStore(
+        self: *DbBuilder,
+        store: *const object_store.ObjectStore,
+    ) rust_call.CallError!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const store_handle = try @constCast(&store.handle).beginRustCall();
+        defer @constCast(&store.handle).finishRustCall();
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_dbbuilder_with_wal_object_store(
+            builder_handle,
+            store_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
     pub fn deinit(self: *DbBuilder) void {
         self.handle.deinit();
     }
@@ -140,6 +161,27 @@ pub const DbReaderBuilder = struct {
         const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_build(builder_handle);
         const raw_reader = try rust_future.waitPointer(future);
         return db_reader.DbReader.fromRaw(raw_reader);
+    }
+
+    pub fn withWalObjectStore(
+        self: *DbReaderBuilder,
+        store: *const object_store.ObjectStore,
+    ) rust_call.CallError!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const store_handle = try @constCast(&store.handle).beginRustCall();
+        defer @constCast(&store.handle).finishRustCall();
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_with_wal_object_store(
+            builder_handle,
+            store_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
     }
 
     pub fn deinit(self: *DbReaderBuilder) void {

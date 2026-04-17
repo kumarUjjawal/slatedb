@@ -16,6 +16,7 @@ const checksums = struct {
     const constructor_writebatch_new = 25201;
     const method_db_begin = 51275;
     const method_dbbuilder_build = 57780;
+    const method_dbbuilder_with_wal_object_store = 59224;
     const method_db_delete = 34129;
     const method_db_delete_with_options = 42509;
     const method_db_flush = 18130;
@@ -35,6 +36,7 @@ const checksums = struct {
     const method_dbreader_shutdown = 33391;
     const method_dbreaderbuilder_build = 3383;
     const method_dbreaderbuilder_with_options = 5765;
+    const method_dbreaderbuilder_with_wal_object_store = 15471;
     const method_db_scan = 38146;
     const method_db_scan_prefix = 16589;
     const method_db_scan_prefix_with_options = 37166;
@@ -53,9 +55,18 @@ const checksums = struct {
     const method_dbtransaction_put = 30341;
     const method_dbtransaction_rollback = 23348;
     const method_dbtransaction_seqnum = 60506;
+    const method_walfile_id = 51355;
+    const method_walfile_iterator = 50239;
+    const method_walfile_metadata = 30832;
+    const method_walfile_next_file = 52353;
+    const method_walfile_next_id = 60587;
+    const method_walfileiterator_next = 18233;
+    const method_walreader_get = 40699;
+    const method_walreader_list = 62366;
     const method_writebatch_delete = 37032;
     const method_writebatch_put = 35694;
     const method_writebatch_put_with_options = 23639;
+    const constructor_walreader_new = 791;
 };
 
 pub fn ensureCompatible() err.CallError!void {
@@ -103,6 +114,11 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_dbbuilder_build",
         checksums.method_dbbuilder_build,
         c.uniffi_slatedb_uniffi_checksum_method_dbbuilder_build(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbbuilder_with_wal_object_store",
+        checksums.method_dbbuilder_with_wal_object_store,
+        c.uniffi_slatedb_uniffi_checksum_method_dbbuilder_with_wal_object_store(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_delete",
@@ -200,6 +216,11 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_with_options(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_with_wal_object_store",
+        checksums.method_dbreaderbuilder_with_wal_object_store,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_with_wal_object_store(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_scan",
         checksums.method_db_scan,
         c.uniffi_slatedb_uniffi_checksum_method_db_scan(),
@@ -288,6 +309,51 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_dbtransaction_seqnum",
         checksums.method_dbtransaction_seqnum,
         c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_seqnum(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_constructor_walreader_new",
+        checksums.constructor_walreader_new,
+        c.uniffi_slatedb_uniffi_checksum_constructor_walreader_new(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walfile_id",
+        checksums.method_walfile_id,
+        c.uniffi_slatedb_uniffi_checksum_method_walfile_id(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walfile_iterator",
+        checksums.method_walfile_iterator,
+        c.uniffi_slatedb_uniffi_checksum_method_walfile_iterator(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walfile_metadata",
+        checksums.method_walfile_metadata,
+        c.uniffi_slatedb_uniffi_checksum_method_walfile_metadata(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walfile_next_file",
+        checksums.method_walfile_next_file,
+        c.uniffi_slatedb_uniffi_checksum_method_walfile_next_file(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walfile_next_id",
+        checksums.method_walfile_next_id,
+        c.uniffi_slatedb_uniffi_checksum_method_walfile_next_id(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walfileiterator_next",
+        checksums.method_walfileiterator_next,
+        c.uniffi_slatedb_uniffi_checksum_method_walfileiterator_next(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walreader_get",
+        checksums.method_walreader_get,
+        c.uniffi_slatedb_uniffi_checksum_method_walreader_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_walreader_list",
+        checksums.method_walreader_list,
+        c.uniffi_slatedb_uniffi_checksum_method_walreader_list(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_writebatch_delete",

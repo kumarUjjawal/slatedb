@@ -6,6 +6,8 @@ const types = @import("types.zig");
 pub const WriteHandle = types.WriteHandle;
 pub const KeyRange = types.KeyRange;
 pub const KeyValue = types.KeyValue;
+pub const RowEntry = types.RowEntry;
+pub const RowEntryKind = types.RowEntryKind;
 
 pub const BufferReader = struct {
     bytes: []const u8,
@@ -115,6 +117,17 @@ pub fn decodeOptionalKeyValue(
     };
 }
 
+pub fn decodeOptionalRowEntry(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)!?RowEntry {
+    return switch (try reader.readInt8()) {
+        0 => null,
+        1 => try decodeRowEntry(allocator, reader),
+        else => unexpectedEnumTag(),
+    };
+}
+
 pub fn encodeKeyRange(range: KeyRange) (std.mem.Allocator.Error || err.CallError)!rust_buffer.RustBuffer {
     const total_len = try keyRangeEncodedLen(range);
     const encoded = try std.heap.page_allocator.alloc(u8, total_len);
@@ -186,12 +199,43 @@ fn decodeKeyValue(
     };
 }
 
+fn decodeRowEntry(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)!RowEntry {
+    const kind = try decodeRowEntryKind(reader);
+
+    const key = try decodeOwnedBytes(allocator, reader);
+    errdefer allocator.free(key);
+
+    const value = try decodeOptionalBytes(allocator, reader);
+    errdefer if (value) |bytes| allocator.free(bytes);
+
+    return .{
+        .kind = kind,
+        .key = key,
+        .value = value,
+        .seq = try reader.readU64(),
+        .create_ts = try decodeOptionalI64(reader),
+        .expire_ts = try decodeOptionalI64(reader),
+    };
+}
+
 fn decodeCloseReason(reader: *BufferReader) err.CallError!err.CloseReason {
     return switch (try reader.readI32()) {
         1 => .clean,
         2 => .fenced,
         3 => .background_panic,
         4 => .unknown,
+        else => unexpectedEnumTag(),
+    };
+}
+
+fn decodeRowEntryKind(reader: *BufferReader) err.CallError!RowEntryKind {
+    return switch (try reader.readI32()) {
+        1 => .value,
+        2 => .tombstone,
+        3 => .merge,
         else => unexpectedEnumTag(),
     };
 }
