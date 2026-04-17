@@ -1,6 +1,8 @@
 const std = @import("std");
 const codec = @import("codec.zig");
+const config = @import("config.zig");
 const db_snapshot = @import("db_snapshot.zig");
+const db_transaction = @import("db_transaction.zig");
 const ffi = @import("ffi.zig");
 const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
@@ -32,6 +34,62 @@ pub const Db = struct {
         var status_info = std.mem.zeroes(ffi.c.RustCallStatus);
         ffi.c.uniffi_slatedb_uniffi_fn_method_db_status(db_handle, &status_info);
         try rust_call.checkStatus(status_info);
+    }
+
+    pub fn begin(
+        self: *Db,
+        io: std.Io,
+        isolation_level: config.IsolationLevel,
+    ) std.Io.Future(rust_call.CallError!db_transaction.DbTransaction) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                rust_call.CallError!db_transaction.DbTransaction,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                rust_call.CallError!db_transaction.DbTransaction,
+                call_err,
+            );
+        };
+
+        const isolation_level_buffer = rust_buffer.RustBuffer.fromI32(
+            @intFromEnum(isolation_level),
+        ) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                rust_call.CallError!db_transaction.DbTransaction,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_begin(
+            db_handle,
+            isolation_level_buffer.raw,
+        );
+        return io.async(waitBeginTask, .{ &self.handle, future });
+    }
+
+    pub fn beginBlocking(
+        self: *Db,
+        isolation_level: config.IsolationLevel,
+    ) rust_call.CallError!db_transaction.DbTransaction {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const isolation_level_buffer = try rust_buffer.RustBuffer.fromI32(
+            @intFromEnum(isolation_level),
+        );
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_begin(
+            db_handle,
+            isolation_level_buffer.raw,
+        );
+        const raw_tx = try rust_future.waitPointer(future);
+        return db_transaction.DbTransaction.fromRaw(raw_tx);
     }
 
     pub fn put(
@@ -342,6 +400,16 @@ fn waitPutTask(
     const write_handle = try codec.decodeWriteHandle(&reader);
     try reader.finish();
     return write_handle;
+}
+
+fn waitBeginTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!db_transaction.DbTransaction {
+    defer owner.finishRustCall();
+
+    const raw_tx = try rust_future.waitPointer(handle);
+    return db_transaction.DbTransaction.fromRaw(raw_tx);
 }
 
 fn waitGetTask(

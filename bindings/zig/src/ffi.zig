@@ -13,6 +13,7 @@ const checksums = struct {
     const constructor_objectstore_resolve = 27737;
     const constructor_dbbuilder_new = 20774;
     const constructor_writebatch_new = 25201;
+    const method_db_begin = 51275;
     const method_dbbuilder_build = 57780;
     const method_db_delete = 34129;
     const method_db_get = 50068;
@@ -22,6 +23,12 @@ const checksums = struct {
     const method_db_status = 55824;
     const method_db_write = 13969;
     const method_dbsnapshot_get = 37663;
+    const method_dbtransaction_commit = 17358;
+    const method_dbtransaction_get = 27661;
+    const method_dbtransaction_id = 16876;
+    const method_dbtransaction_put = 30341;
+    const method_dbtransaction_rollback = 23348;
+    const method_dbtransaction_seqnum = 60506;
     const method_writebatch_delete = 37032;
     const method_writebatch_put = 35694;
 };
@@ -54,6 +61,11 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_constructor_writebatch_new",
         checksums.constructor_writebatch_new,
         c.uniffi_slatedb_uniffi_checksum_constructor_writebatch_new(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_begin",
+        checksums.method_db_begin,
+        c.uniffi_slatedb_uniffi_checksum_method_db_begin(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbbuilder_build",
@@ -99,6 +111,36 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get",
         checksums.method_dbsnapshot_get,
         c.uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_commit",
+        checksums.method_dbtransaction_commit,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_commit(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_get",
+        checksums.method_dbtransaction_get,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_id",
+        checksums.method_dbtransaction_id,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_id(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_put",
+        checksums.method_dbtransaction_put,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_put(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_rollback",
+        checksums.method_dbtransaction_rollback,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_rollback(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_seqnum",
+        checksums.method_dbtransaction_seqnum,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_seqnum(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_writebatch_delete",

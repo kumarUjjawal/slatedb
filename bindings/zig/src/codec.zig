@@ -99,6 +99,14 @@ pub fn decodeWriteHandle(reader: *BufferReader) err.CallError!WriteHandle {
     };
 }
 
+pub fn decodeOptionalWriteHandle(reader: *BufferReader) err.CallError!?WriteHandle {
+    return switch (try reader.readInt8()) {
+        0 => null,
+        1 => try decodeWriteHandle(reader),
+        else => error.UnexpectedEnumTag,
+    };
+}
+
 pub fn decodeApiError(reader: *BufferReader) err.CallError!err.ApiErrorPayload {
     return switch (try reader.readU32()) {
         1 => .{ .transaction = try decodeString(reader) },

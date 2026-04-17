@@ -40,6 +40,12 @@ pub const RustBuffer = struct {
         return try fromBytes(encoded);
     }
 
+    pub fn fromI32(value: i32) rust_call.CallError!RustBuffer {
+        var encoded: [4]u8 = undefined;
+        std.mem.writeInt(i32, &encoded, value, .big);
+        return fromBytes(&encoded);
+    }
+
     pub fn bytes(self: RustBuffer) []const u8 {
         if (self.raw.len == 0 or self.raw.data == null) {
             return &.{};
