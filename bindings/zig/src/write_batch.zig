@@ -1,4 +1,5 @@
 const std = @import("std");
+const config = @import("config.zig");
 const ffi = @import("ffi.zig");
 const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
@@ -41,6 +42,32 @@ pub const WriteBatch = struct {
             batch_handle,
             key_buffer.raw,
             value_buffer.raw,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
+    pub fn putWithOptions(
+        self: *WriteBatch,
+        key: []const u8,
+        value: []const u8,
+        options: config.PutOptions,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const batch_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const value_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(value);
+        const options_buffer = try config.encodePutOptions(options);
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_writebatch_put_with_options(
+            batch_handle,
+            key_buffer.raw,
+            value_buffer.raw,
+            options_buffer.raw,
             &status,
         );
         try rust_call.checkStatus(status);

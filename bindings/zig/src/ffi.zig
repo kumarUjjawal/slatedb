@@ -17,19 +17,33 @@ const checksums = struct {
     const method_db_begin = 51275;
     const method_dbbuilder_build = 57780;
     const method_db_delete = 34129;
+    const method_db_delete_with_options = 42509;
+    const method_db_flush = 18130;
+    const method_db_flush_with_options = 63293;
     const method_db_get = 50068;
+    const method_db_get_key_value = 57684;
+    const method_db_get_key_value_with_options = 20648;
+    const method_db_get_with_options = 20501;
     const method_db_put = 59996;
+    const method_db_put_with_options = 58268;
     const method_dbreader_get = 22886;
+    const method_dbreader_get_with_options = 9133;
     const method_dbreader_scan = 19575;
     const method_dbreader_scan_prefix = 51732;
+    const method_dbreader_scan_prefix_with_options = 24990;
+    const method_dbreader_scan_with_options = 33406;
     const method_dbreader_shutdown = 33391;
     const method_dbreaderbuilder_build = 3383;
+    const method_dbreaderbuilder_with_options = 5765;
     const method_db_scan = 38146;
     const method_db_scan_prefix = 16589;
+    const method_db_scan_prefix_with_options = 37166;
+    const method_db_scan_with_options = 57778;
     const method_db_shutdown = 43377;
     const method_db_snapshot = 13313;
     const method_db_status = 55824;
     const method_db_write = 13969;
+    const method_db_write_with_options = 34167;
     const method_dbiterator_next = 49160;
     const method_dbiterator_seek = 43547;
     const method_dbsnapshot_get = 37663;
@@ -41,6 +55,7 @@ const checksums = struct {
     const method_dbtransaction_seqnum = 60506;
     const method_writebatch_delete = 37032;
     const method_writebatch_put = 35694;
+    const method_writebatch_put_with_options = 23639;
 };
 
 pub fn ensureCompatible() err.CallError!void {
@@ -93,9 +108,39 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_db_delete(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_delete_with_options",
+        checksums.method_db_delete_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_delete_with_options(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_flush",
+        checksums.method_db_flush,
+        c.uniffi_slatedb_uniffi_checksum_method_db_flush(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_flush_with_options",
+        checksums.method_db_flush_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_flush_with_options(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_get",
         checksums.method_db_get,
         c.uniffi_slatedb_uniffi_checksum_method_db_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_get_key_value",
+        checksums.method_db_get_key_value,
+        c.uniffi_slatedb_uniffi_checksum_method_db_get_key_value(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_get_key_value_with_options",
+        checksums.method_db_get_key_value_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_get_key_value_with_options(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_get_with_options",
+        checksums.method_db_get_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_get_with_options(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_put",
@@ -103,9 +148,19 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_db_put(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_put_with_options",
+        checksums.method_db_put_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_put_with_options(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbreader_get",
         checksums.method_dbreader_get,
         c.uniffi_slatedb_uniffi_checksum_method_dbreader_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_get_with_options",
+        checksums.method_dbreader_get_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_get_with_options(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbreader_scan",
@@ -118,6 +173,16 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_dbreader_scan_prefix(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_scan_prefix_with_options",
+        checksums.method_dbreader_scan_prefix_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_scan_prefix_with_options(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_scan_with_options",
+        checksums.method_dbreader_scan_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_scan_with_options(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbreader_shutdown",
         checksums.method_dbreader_shutdown,
         c.uniffi_slatedb_uniffi_checksum_method_dbreader_shutdown(),
@@ -128,6 +193,11 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_build(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_with_options",
+        checksums.method_dbreaderbuilder_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_with_options(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_scan",
         checksums.method_db_scan,
         c.uniffi_slatedb_uniffi_checksum_method_db_scan(),
@@ -136,6 +206,16 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_db_scan_prefix",
         checksums.method_db_scan_prefix,
         c.uniffi_slatedb_uniffi_checksum_method_db_scan_prefix(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_scan_prefix_with_options",
+        checksums.method_db_scan_prefix_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_scan_prefix_with_options(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_scan_with_options",
+        checksums.method_db_scan_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_scan_with_options(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_shutdown",
@@ -156,6 +236,11 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_db_write",
         checksums.method_db_write,
         c.uniffi_slatedb_uniffi_checksum_method_db_write(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_write_with_options",
+        checksums.method_db_write_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_write_with_options(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get",
@@ -211,6 +296,11 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_writebatch_put",
         checksums.method_writebatch_put,
         c.uniffi_slatedb_uniffi_checksum_method_writebatch_put(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_writebatch_put_with_options",
+        checksums.method_writebatch_put_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_writebatch_put_with_options(),
     );
 
     abi_checked = true;

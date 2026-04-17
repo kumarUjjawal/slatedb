@@ -1,6 +1,16 @@
 pub const CallError = @import("error.zig").CallError;
 pub const CloseReason = @import("error.zig").CloseReason;
 pub const IsolationLevel = @import("config.zig").IsolationLevel;
+pub const DurabilityLevel = @import("config.zig").DurabilityLevel;
+pub const FlushOptions = @import("config.zig").FlushOptions;
+pub const FlushType = @import("config.zig").FlushType;
+pub const MergeOptions = @import("config.zig").MergeOptions;
+pub const PutOptions = @import("config.zig").PutOptions;
+pub const ReadOptions = @import("config.zig").ReadOptions;
+pub const ReaderOptions = @import("config.zig").ReaderOptions;
+pub const ScanOptions = @import("config.zig").ScanOptions;
+pub const Ttl = @import("config.zig").Ttl;
+pub const WriteOptions = @import("config.zig").WriteOptions;
 pub const ffi = @import("ffi.zig");
 pub const WriteHandle = @import("types.zig").WriteHandle;
 pub const KeyRange = @import("types.zig").KeyRange;

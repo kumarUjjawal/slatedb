@@ -1,4 +1,5 @@
 const std = @import("std");
+const config = @import("config.zig");
 const db = @import("db.zig");
 const db_reader = @import("db_reader.zig");
 const ffi = @import("ffi.zig");
@@ -98,6 +99,23 @@ pub const DbReaderBuilder = struct {
                 ffi.c.uniffi_slatedb_uniffi_fn_free_dbreaderbuilder,
             ),
         };
+    }
+
+    pub fn withOptions(self: *DbReaderBuilder, options: config.ReaderOptions) rust_call.CallError!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const options_buffer = try config.encodeReaderOptions(options);
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_with_options(
+            builder_handle,
+            options_buffer.raw,
+            &status,
+        );
+        try rust_call.checkStatus(status);
     }
 
     pub fn build(self: *DbReaderBuilder, io: std.Io) std.Io.Future(rust_call.CallError!db_reader.DbReader) {
