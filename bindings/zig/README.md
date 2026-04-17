@@ -23,8 +23,13 @@ future-based async calls built on Zig `std.Io`.
 - supports `Db.getBlocking`
 - supports `Db.delete`
 - supports `Db.deleteBlocking`
+- supports `Db.write`
+- supports `Db.writeBlocking`
 - supports `Db.shutdown`
 - supports `Db.shutdownBlocking`
+- supports `WriteBatch.init`
+- supports `WriteBatch.put`
+- supports `WriteBatch.delete`
 
 ## What Is Next
 
