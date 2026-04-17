@@ -1,21 +1,30 @@
 # SlateDB Zig Binding
 
-This directory contains the Zig binding for SlateDB.
+This directory contains the official Zig binding for SlateDB.
 
-Current scope:
+This binding is still early. It is a handwritten Zig wrapper over the existing
+UniFFI C ABI and shared library.
+
+## What Works Today
 
 - links against the existing `slatedb-uniffi` shared library
 - uses the checked-in UniFFI C header
 - validates the UniFFI contract version and the first API checksums
-- supports a first blocking smoke path:
-  - `ObjectStore.resolve`
-  - `DbBuilder.init`
-  - `DbBuilder.buildBlocking`
-  - `Db.status`
-  - `Db.putBlocking`
-  - `Db.getBlocking`
-  - `Db.deleteBlocking`
-  - `Db.shutdownBlocking`
+- includes a first blocking database path
+- supports `ObjectStore.resolve`
+- supports `DbBuilder.init`
+- supports `DbBuilder.buildBlocking`
+- supports `Db.status`
+- supports `Db.putBlocking`
+- supports `Db.getBlocking`
+- supports `Db.deleteBlocking`
+- supports `Db.shutdownBlocking`
+
+## What Is Next
+
+- native Zig `async/await` wrappers
+- wider API coverage to match the Go binding
+- more tests ported from the other bindings
 
 ## Zig Version
 
@@ -58,8 +67,5 @@ zig build test -Dslatedb-lib-dir=/absolute/path/to/target/debug
 
 ## Current Status
 
-This is an early handwritten binding over the UniFFI C ABI.
-
-- the first blocking database path is implemented and covered by Zig smoke tests
-- native Zig `async/await` wrappers are still planned
-- wider API parity with the Go binding is still in progress
+The first blocking database path is implemented and covered by Zig smoke tests.
+The binding is not feature-complete yet.
