@@ -60,6 +60,6 @@ zig build test -Dslatedb-lib-dir=/absolute/path/to/target/debug
 
 This is an early handwritten binding over the UniFFI C ABI.
 
-- the first blocking database path is implemented
+- the first blocking database path is implemented and covered by Zig smoke tests
 - native Zig `async/await` wrappers are still planned
 - wider API parity with the Go binding is still in progress
