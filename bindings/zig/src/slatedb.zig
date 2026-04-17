@@ -7,7 +7,9 @@ pub const KeyRange = @import("types.zig").KeyRange;
 pub const KeyValue = @import("types.zig").KeyValue;
 pub const ObjectStore = @import("object_store.zig").ObjectStore;
 pub const DbBuilder = @import("builder.zig").DbBuilder;
+pub const DbReaderBuilder = @import("builder.zig").DbReaderBuilder;
 pub const Db = @import("db.zig").Db;
+pub const DbReader = @import("db_reader.zig").DbReader;
 pub const DbSnapshot = @import("db_snapshot.zig").DbSnapshot;
 pub const DbTransaction = @import("db_transaction.zig").DbTransaction;
 pub const DbIterator = @import("iterator.zig").DbIterator;
@@ -22,6 +24,7 @@ test {
     _ = @import("object_store.zig");
     _ = @import("builder.zig");
     _ = @import("db.zig");
+    _ = @import("db_reader.zig");
     _ = @import("db_snapshot.zig");
     _ = @import("db_transaction.zig");
     _ = @import("iterator.zig");

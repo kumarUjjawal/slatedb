@@ -1,5 +1,6 @@
 const std = @import("std");
 const db = @import("db.zig");
+const db_reader = @import("db_reader.zig");
 const ffi = @import("ffi.zig");
 const object_handle = @import("object_handle.zig");
 const object_store = @import("object_store.zig");
@@ -70,4 +71,69 @@ fn waitBuildTask(
     defer owner.finishRustCall();
     const raw_db = try rust_future.waitPointer(handle);
     return db.Db.fromRaw(raw_db);
+}
+
+pub const DbReaderBuilder = struct {
+    handle: object_handle.ObjectHandle,
+
+    pub fn init(path: []const u8, store: *const object_store.ObjectStore) rust_call.CallError!DbReaderBuilder {
+        try ffi.ensureCompatible();
+
+        const path_buffer = try rust_buffer.RustBuffer.fromBytes(path);
+        const store_handle = try @constCast(&store.handle).beginRustCall();
+        defer @constCast(&store.handle).finishRustCall();
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        const raw = ffi.c.uniffi_slatedb_uniffi_fn_constructor_dbreaderbuilder_new(
+            path_buffer.raw,
+            store_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+
+        return .{
+            .handle = object_handle.ObjectHandle.init(
+                raw,
+                ffi.c.uniffi_slatedb_uniffi_fn_clone_dbreaderbuilder,
+                ffi.c.uniffi_slatedb_uniffi_fn_free_dbreaderbuilder,
+            ),
+        };
+    }
+
+    pub fn build(self: *DbReaderBuilder, io: std.Io) std.Io.Future(rust_call.CallError!db_reader.DbReader) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!db_reader.DbReader, call_err);
+        };
+
+        const builder_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!db_reader.DbReader, call_err);
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_build(builder_handle);
+        return io.async(waitReaderBuildTask, .{ &self.handle, future });
+    }
+
+    pub fn buildBlocking(self: *DbReaderBuilder) rust_call.CallError!db_reader.DbReader {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_build(builder_handle);
+        const raw_reader = try rust_future.waitPointer(future);
+        return db_reader.DbReader.fromRaw(raw_reader);
+    }
+
+    pub fn deinit(self: *DbReaderBuilder) void {
+        self.handle.deinit();
+    }
+};
+
+fn waitReaderBuildTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!db_reader.DbReader {
+    defer owner.finishRustCall();
+    const raw_reader = try rust_future.waitPointer(handle);
+    return db_reader.DbReader.fromRaw(raw_reader);
 }

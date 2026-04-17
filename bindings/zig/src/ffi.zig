@@ -12,12 +12,18 @@ var abi_checked = false;
 const checksums = struct {
     const constructor_objectstore_resolve = 27737;
     const constructor_dbbuilder_new = 20774;
+    const constructor_dbreaderbuilder_new = 63705;
     const constructor_writebatch_new = 25201;
     const method_db_begin = 51275;
     const method_dbbuilder_build = 57780;
     const method_db_delete = 34129;
     const method_db_get = 50068;
     const method_db_put = 59996;
+    const method_dbreader_get = 22886;
+    const method_dbreader_scan = 19575;
+    const method_dbreader_scan_prefix = 51732;
+    const method_dbreader_shutdown = 33391;
+    const method_dbreaderbuilder_build = 3383;
     const method_db_scan = 38146;
     const method_db_scan_prefix = 16589;
     const method_db_shutdown = 43377;
@@ -62,6 +68,11 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_constructor_dbbuilder_new(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_constructor_dbreaderbuilder_new",
+        checksums.constructor_dbreaderbuilder_new,
+        c.uniffi_slatedb_uniffi_checksum_constructor_dbreaderbuilder_new(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_constructor_writebatch_new",
         checksums.constructor_writebatch_new,
         c.uniffi_slatedb_uniffi_checksum_constructor_writebatch_new(),
@@ -90,6 +101,31 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_db_put",
         checksums.method_db_put,
         c.uniffi_slatedb_uniffi_checksum_method_db_put(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_get",
+        checksums.method_dbreader_get,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_scan",
+        checksums.method_dbreader_scan,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_scan(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_scan_prefix",
+        checksums.method_dbreader_scan_prefix,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_scan_prefix(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreader_shutdown",
+        checksums.method_dbreader_shutdown,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreader_shutdown(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_build",
+        checksums.method_dbreaderbuilder_build,
+        c.uniffi_slatedb_uniffi_checksum_method_dbreaderbuilder_build(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_scan",
