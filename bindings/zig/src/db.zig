@@ -5,6 +5,7 @@ const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
 const rust_call = @import("rust_call.zig");
 const rust_future = @import("rust_future.zig");
+const write_batch = @import("write_batch.zig");
 
 pub const WriteHandle = codec.WriteHandle;
 
@@ -236,6 +237,32 @@ pub const Db = struct {
         return rust_future.asyncVoid(io, &self.handle, future);
     }
 
+    pub fn write(
+        self: *Db,
+        io: std.Io,
+        batch: *write_batch.WriteBatch,
+    ) std.Io.Future(rust_call.CallError!WriteHandle) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!WriteHandle, call_err);
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!WriteHandle, call_err);
+        };
+
+        const batch_handle = batch.handle.beginRustCall() catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(rust_call.CallError!WriteHandle, call_err);
+        };
+        defer batch.handle.finishRustCall();
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_write(
+            db_handle,
+            batch_handle,
+        );
+        return io.async(waitWriteTask, .{ &self.handle, future });
+    }
+
     pub fn shutdownBlocking(self: *Db) rust_call.CallError!void {
         try ffi.ensureCompatible();
 
@@ -244,6 +271,32 @@ pub const Db = struct {
 
         const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_shutdown(db_handle);
         try rust_future.waitVoid(future);
+    }
+
+    pub fn writeBlocking(
+        self: *Db,
+        batch: *write_batch.WriteBatch,
+    ) rust_call.CallError!WriteHandle {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const batch_handle = try batch.handle.beginRustCall();
+        defer batch.handle.finishRustCall();
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_write(
+            db_handle,
+            batch_handle,
+        );
+
+        var result_buffer = try rust_future.waitRustBuffer(future);
+        defer result_buffer.deinit();
+
+        var reader = codec.BufferReader.init(result_buffer.bytes());
+        const handle = try codec.decodeWriteHandle(&reader);
+        try reader.finish();
+        return handle;
     }
 
     pub fn deinit(self: *Db) void {
@@ -286,6 +339,21 @@ fn waitDeleteTask(
     owner: *object_handle.ObjectHandle,
     handle: u64,
 ) (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle {
+    defer owner.finishRustCall();
+
+    var result_buffer = try rust_future.waitRustBuffer(handle);
+    defer result_buffer.deinit();
+
+    var reader = codec.BufferReader.init(result_buffer.bytes());
+    const write_handle = try codec.decodeWriteHandle(&reader);
+    try reader.finish();
+    return write_handle;
+}
+
+fn waitWriteTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!WriteHandle {
     defer owner.finishRustCall();
 
     var result_buffer = try rust_future.waitRustBuffer(handle);

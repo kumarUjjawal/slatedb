@@ -1,4 +1,5 @@
 const std = @import("std");
+const slatedb = @import("slatedb");
 const support = @import("support.zig");
 
 test "Db async lifecycle and CRUD" {
@@ -76,5 +77,44 @@ test "Db async rejects empty keys" {
 
     var invalid_delete_future = test_db.db.delete(io, "");
     try std.testing.expectError(error.Invalid, invalid_delete_future.await(io));
+    try test_db.shutdownAsync(io);
+}
+
+test "Db async write batch" {
+    var runtime = support.AsyncRuntime.init();
+    defer runtime.deinit();
+    const io = runtime.io();
+
+    var test_db = try support.TestDb.initAsync(io);
+    defer test_db.deinit();
+
+    var seed_put_future = test_db.db.put(io, "remove-me", "old");
+    _ = try seed_put_future.await(io);
+
+    var batch = try slatedb.WriteBatch.init();
+    defer batch.deinit();
+
+    try batch.put("batch-put", "value");
+    try batch.delete("remove-me");
+
+    var write_future = test_db.db.write(io, &batch);
+    const batch_handle = try write_future.await(io);
+    try std.testing.expect(batch_handle.seqnum > 0);
+
+    var batch_get_future = test_db.db.get(io, std.testing.allocator, "batch-put");
+    const batch_value = try batch_get_future.await(io);
+    defer if (batch_value) |bytes| std.testing.allocator.free(bytes);
+
+    try std.testing.expect(batch_value != null);
+    try std.testing.expectEqualSlices(u8, "value", batch_value.?);
+
+    var removed_get_future = test_db.db.get(io, std.testing.allocator, "remove-me");
+    const removed_value = try removed_get_future.await(io);
+    defer if (removed_value) |bytes| std.testing.allocator.free(bytes);
+    try std.testing.expect(removed_value == null);
+
+    var second_write_future = test_db.db.write(io, &batch);
+    try std.testing.expectError(error.Invalid, second_write_future.await(io));
+
     try test_db.shutdownAsync(io);
 }
