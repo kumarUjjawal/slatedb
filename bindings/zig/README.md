@@ -19,10 +19,12 @@ Builders and object store:
 - supports `DbBuilder.init`
 - supports `DbBuilder.build`
 - supports `DbBuilder.buildBlocking`
+- supports `DbBuilder.withMergeOperator`
 - supports `DbBuilder.withWalObjectStore`
 - supports `DbReaderBuilder.init`
 - supports `DbReaderBuilder.build`
 - supports `DbReaderBuilder.buildBlocking`
+- supports `DbReaderBuilder.withMergeOperator`
 - supports `DbReaderBuilder.withOptions`
 - supports `DbReaderBuilder.withWalObjectStore`
 
@@ -172,6 +174,8 @@ Iterators, batches, and exported types:
 - exports `LogCallback`
 - exports `LogLevel`
 - exports `LogRecord`
+- exports `MergeOperator`
+- exports `MergeOperatorResult`
 - exports `MergeOptions`
 - exports `PutOptions`
 - exports `ReadOptions`
@@ -191,7 +195,6 @@ Iterators, batches, and exported types:
 ## What Is Next
 
 - custom metrics recorder support
-- merge-operator callbacks
 
 ## Zig Version
 
@@ -287,11 +290,66 @@ const value = try get_future.await(io);
 defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 ```
 
+## Merge Operators
+
+Use `DbBuilder.withMergeOperator` when writing merge operands. Use
+`DbReaderBuilder.withMergeOperator` when a reader may need to read them back.
+
+The callback `context` must stay valid while the database or reader may call
+the merge operator. Return `.value` for a merged value or `.failed` with a
+message to fail the SlateDB call.
+
+Example:
+
+```zig
+const std = @import("std");
+const slatedb = @import("slatedb");
+
+fn concatMerge(
+    context: *anyopaque,
+    allocator: std.mem.Allocator,
+    key: []const u8,
+    existing_value: ?[]const u8,
+    operand: []const u8,
+) std.mem.Allocator.Error!slatedb.MergeOperatorResult {
+    _ = context;
+    _ = key;
+
+    const prefix_len = if (existing_value) |value| value.len else 0;
+    const merged = try allocator.alloc(u8, prefix_len + operand.len);
+
+    if (existing_value) |value| {
+        @memcpy(merged[0..value.len], value);
+        @memcpy(merged[value.len..], operand);
+    } else {
+        @memcpy(merged, operand);
+    }
+
+    return .{ .value = merged };
+}
+
+var merge_context: u8 = 0;
+const merge_operator = slatedb.MergeOperator{
+    .context = @ptrCast(&merge_context),
+    .merge_fn = concatMerge,
+};
+
+var store = try slatedb.ObjectStore.resolve("memory:///");
+defer store.deinit();
+
+var builder = try slatedb.DbBuilder.init("zig-demo", &store);
+defer builder.deinit();
+try builder.withMergeOperator(&merge_operator);
+```
+
+Use the same merge operator on `DbReaderBuilder` before opening a reader that
+must read merged rows.
+
 ## Current Status
 
 The Zig binding now covers the main async and blocking database path, option
 structs and option-based methods, typed call error details, merge writes,
-reader reads and scans, write batches, snapshots, transactions, iterators, the
-built-in integer metrics snapshot, logging callbacks, WAL inspection, and Linux
-CI. It is still behind the Go binding for custom metrics recorders and merge
-operator callbacks.
+reader reads and scans, merge operator callbacks, write batches, snapshots,
+transactions, iterators, the built-in integer metrics snapshot, logging
+callbacks, WAL inspection, and Linux CI. It is still behind the Go binding for
+custom metrics recorder support.
