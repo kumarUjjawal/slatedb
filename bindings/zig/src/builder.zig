@@ -34,6 +34,19 @@ pub const DbBuilder = struct {
         };
     }
 
+    pub fn build(self: *DbBuilder, io: std.Io) std.Io.Future(rust_call.CallError!db.Db) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!db.Db, call_err);
+        };
+
+        const builder_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!db.Db, call_err);
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbbuilder_build(builder_handle);
+        return io.async(waitBuildTask, .{ &self.handle, future });
+    }
+
     pub fn buildBlocking(self: *DbBuilder) rust_call.CallError!db.Db {
         try ffi.ensureCompatible();
 
@@ -49,3 +62,12 @@ pub const DbBuilder = struct {
         self.handle.deinit();
     }
 };
+
+fn waitBuildTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!db.Db {
+    defer owner.finishRustCall();
+    const raw_db = try rust_future.waitPointer(handle);
+    return db.Db.fromRaw(raw_db);
+}

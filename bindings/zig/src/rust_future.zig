@@ -1,5 +1,6 @@
 const std = @import("std");
 const ffi = @import("ffi.zig");
+const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
 const rust_call = @import("rust_call.zig");
 
@@ -9,6 +10,37 @@ const pending_poll_result: i8 = -1;
 const Waiter = struct {
     poll_result: std.atomic.Value(i8) = .init(pending_poll_result),
 };
+
+pub fn ready(comptime Result: type, result: Result) std.Io.Future(Result) {
+    return .{
+        .any_future = null,
+        .result = result,
+    };
+}
+
+pub fn asyncRustBuffer(
+    io: std.Io,
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) std.Io.Future(rust_call.CallError!rust_buffer.RustBuffer) {
+    return io.async(waitRustBufferTask, .{ owner, handle });
+}
+
+pub fn asyncPointer(
+    io: std.Io,
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) std.Io.Future(rust_call.CallError!?*anyopaque) {
+    return io.async(waitPointerTask, .{ owner, handle });
+}
+
+pub fn asyncVoid(
+    io: std.Io,
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) std.Io.Future(rust_call.CallError!void) {
+    return io.async(waitVoidTask, .{ owner, handle });
+}
 
 pub fn waitRustBuffer(handle: u64) rust_call.CallError!rust_buffer.RustBuffer {
     defer ffi.c.ffi_slatedb_uniffi_rust_future_free_rust_buffer(@intCast(handle));
@@ -51,6 +83,30 @@ pub fn waitVoid(handle: u64) rust_call.CallError!void {
     var status = std.mem.zeroes(ffi.c.RustCallStatus);
     ffi.c.ffi_slatedb_uniffi_rust_future_complete_void(@intCast(handle), &status);
     try rust_call.checkStatus(status);
+}
+
+fn waitRustBufferTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!rust_buffer.RustBuffer {
+    defer owner.finishRustCall();
+    return waitRustBuffer(handle);
+}
+
+fn waitPointerTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!?*anyopaque {
+    defer owner.finishRustCall();
+    return waitPointer(handle);
+}
+
+fn waitVoidTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) rust_call.CallError!void {
+    defer owner.finishRustCall();
+    return waitVoid(handle);
 }
 
 fn waitUntilReady(

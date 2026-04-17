@@ -32,6 +32,50 @@ pub const Db = struct {
         try rust_call.checkStatus(status_info);
     }
 
+    pub fn put(
+        self: *Db,
+        io: std.Io,
+        key: []const u8,
+        value: []const u8,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!WriteHandle) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+        const value_buffer = rust_buffer.RustBuffer.fromSerializedBytes(value) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_put(
+            db_handle,
+            key_buffer.raw,
+            value_buffer.raw,
+        );
+
+        return io.async(waitPutTask, .{ &self.handle, future });
+    }
+
     pub fn putBlocking(
         self: *Db,
         key: []const u8,
@@ -59,6 +103,42 @@ pub const Db = struct {
         return handle;
     }
 
+    pub fn get(
+        self: *Db,
+        io: std.Io,
+        allocator: std.mem.Allocator,
+        key: []const u8,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!?[]u8) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!?[]u8,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!?[]u8,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!?[]u8,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_get(
+            db_handle,
+            key_buffer.raw,
+        );
+
+        return io.async(waitGetTask, .{ &self.handle, allocator, future });
+    }
+
     pub fn getBlocking(
         self: *Db,
         allocator: std.mem.Allocator,
@@ -82,6 +162,41 @@ pub const Db = struct {
         const value = try codec.decodeOptionalBytes(allocator, &reader);
         try reader.finish();
         return value;
+    }
+
+    pub fn delete(
+        self: *Db,
+        io: std.Io,
+        key: []const u8,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!WriteHandle) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_delete(
+            db_handle,
+            key_buffer.raw,
+        );
+
+        return io.async(waitDeleteTask, .{ &self.handle, future });
     }
 
     pub fn deleteBlocking(
@@ -108,6 +223,19 @@ pub const Db = struct {
         return handle;
     }
 
+    pub fn shutdown(self: *Db, io: std.Io) std.Io.Future(rust_call.CallError!void) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!void, call_err);
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(rust_call.CallError!void, call_err);
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_shutdown(db_handle);
+        return rust_future.asyncVoid(io, &self.handle, future);
+    }
+
     pub fn shutdownBlocking(self: *Db) rust_call.CallError!void {
         try ffi.ensureCompatible();
 
@@ -122,3 +250,49 @@ pub const Db = struct {
         self.handle.deinit();
     }
 };
+
+fn waitPutTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle {
+    defer owner.finishRustCall();
+
+    var result_buffer = try rust_future.waitRustBuffer(handle);
+    defer result_buffer.deinit();
+
+    var reader = codec.BufferReader.init(result_buffer.bytes());
+    const write_handle = try codec.decodeWriteHandle(&reader);
+    try reader.finish();
+    return write_handle;
+}
+
+fn waitGetTask(
+    owner: *object_handle.ObjectHandle,
+    allocator: std.mem.Allocator,
+    handle: u64,
+) (std.mem.Allocator.Error || rust_call.CallError)!?[]u8 {
+    defer owner.finishRustCall();
+
+    var result_buffer = try rust_future.waitRustBuffer(handle);
+    defer result_buffer.deinit();
+
+    var reader = codec.BufferReader.init(result_buffer.bytes());
+    const value = try codec.decodeOptionalBytes(allocator, &reader);
+    try reader.finish();
+    return value;
+}
+
+fn waitDeleteTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle {
+    defer owner.finishRustCall();
+
+    var result_buffer = try rust_future.waitRustBuffer(handle);
+    defer result_buffer.deinit();
+
+    var reader = codec.BufferReader.init(result_buffer.bytes());
+    const write_handle = try codec.decodeWriteHandle(&reader);
+    try reader.finish();
+    return write_handle;
+}
