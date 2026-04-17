@@ -11,7 +11,7 @@ future-based async calls built on Zig `std.Io`.
 Core:
 - links against the existing `slatedb-uniffi` shared library
 - uses the checked-in UniFFI C header
-- validates the UniFFI contract version and the first API checksums
+- validates the UniFFI contract version and API checksums
 - includes Linux CI coverage for the Zig binding
 
 Builders and object store:
@@ -19,10 +19,12 @@ Builders and object store:
 - supports `DbBuilder.init`
 - supports `DbBuilder.build`
 - supports `DbBuilder.buildBlocking`
+- supports `DbBuilder.withWalObjectStore`
 - supports `DbReaderBuilder.init`
 - supports `DbReaderBuilder.build`
 - supports `DbReaderBuilder.buildBlocking`
 - supports `DbReaderBuilder.withOptions`
+- supports `DbReaderBuilder.withWalObjectStore`
 
 Database:
 - supports `Db.status`
@@ -132,11 +134,26 @@ Iterators, batches, and exported types:
 - supports `DbIterator.nextBlocking`
 - supports `DbIterator.seek`
 - supports `DbIterator.seekBlocking`
+- supports `WalReader.init`
+- supports `WalReader.get`
+- supports `WalReader.list`
+- supports `WalReader.listBlocking`
+- supports `WalFile.id`
+- supports `WalFile.nextId`
+- supports `WalFile.nextFile`
+- supports `WalFile.metadata`
+- supports `WalFile.metadataBlocking`
+- supports `WalFile.iterator`
+- supports `WalFile.iteratorBlocking`
+- supports `WalFileIterator.next`
+- supports `WalFileIterator.nextBlocking`
 - exports `CallErrorDetail`
 - supports `takeLastCallErrorDetail`
 - supports `clearLastCallErrorDetail`
 - exports `KeyRange`
 - exports `KeyValue`
+- exports `RowEntry`
+- exports `RowEntryKind`
 - exports `DurabilityLevel`
 - exports `FlushOptions`
 - exports `FlushType`
@@ -148,6 +165,7 @@ Iterators, batches, and exported types:
 - exports `Ttl`
 - exports `WriteHandle`
 - exports `WriteOptions`
+- exports `WalFileMetadata`
 - supports `WriteBatch.init`
 - supports `WriteBatch.put`
 - supports `WriteBatch.putWithOptions`
@@ -157,7 +175,6 @@ Iterators, batches, and exported types:
 
 - metrics support
 - logging and merge-operator callbacks
-- WAL reader support
 
 ## Zig Version
 
@@ -257,5 +274,5 @@ defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 
 The Zig binding now covers the main async and blocking database path, option
 structs and option-based methods, typed call error details, reader reads and
-scans, write batches, snapshots, transactions, iterators, and Linux CI. It is
-still behind the Go binding for metrics, callbacks, and WAL support.
+scans, write batches, snapshots, transactions, iterators, WAL inspection, and
+Linux CI. It is still behind the Go binding for metrics and callbacks.
