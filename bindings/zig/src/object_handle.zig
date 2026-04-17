@@ -1,4 +1,5 @@
 const std = @import("std");
+const err = @import("error.zig");
 const ffi = @import("ffi.zig");
 const rust_call = @import("rust_call.zig");
 
@@ -25,10 +26,12 @@ pub const ObjectHandle = struct {
         self.lock();
         if (self.destroyed or self.raw == null) {
             self.unlock();
+            err.rememberObjectDestroyed();
             return error.ObjectDestroyed;
         }
         if (self.call_count == std.math.maxInt(i64)) {
             self.unlock();
+            err.rememberInternalMessage("too many in-flight SlateDB calls");
             return error.Internal;
         }
 
@@ -45,10 +48,11 @@ pub const ObjectHandle = struct {
 
         if (cloned == null) {
             self.finishRustCall();
+            err.rememberInternalMessage("clone returned a null SlateDB handle");
             return error.Internal;
         }
 
-        return cloned orelse error.Internal;
+        return cloned.?;
     }
 
     pub fn finishRustCall(self: *ObjectHandle) void {
@@ -95,7 +99,7 @@ pub const ObjectHandle = struct {
     fn freeRaw(self: *ObjectHandle, raw: ?*anyopaque, context: []const u8) void {
         var status = std.mem.zeroes(ffi.c.RustCallStatus);
         self.free_fn(raw, &status);
-        rust_call.checkStatus(status) catch |call_err| {
+        rust_call.checkStatusSilent(status) catch |call_err| {
             std.log.err("{s}: {s}", .{ context, @errorName(call_err) });
         };
     }

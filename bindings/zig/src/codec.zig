@@ -17,7 +17,7 @@ pub const BufferReader = struct {
 
     pub fn finish(self: *BufferReader) err.CallError!void {
         if (self.pos != self.bytes.len) {
-            return error.UnexpectedRustBufferData;
+            return unexpectedRustBufferData();
         }
     }
 
@@ -46,7 +46,7 @@ pub const BufferReader = struct {
 
     pub fn readSlice(self: *BufferReader, len: usize) err.CallError![]const u8 {
         if (self.pos + len > self.bytes.len) {
-            return error.UnexpectedEndOfBuffer;
+            return unexpectedEndOfBuffer();
         }
         const out = self.bytes[self.pos .. self.pos + len];
         self.pos += len;
@@ -55,7 +55,7 @@ pub const BufferReader = struct {
 
     fn readByte(self: *BufferReader) err.CallError!u8 {
         if (self.pos >= self.bytes.len) {
-            return error.UnexpectedEndOfBuffer;
+            return unexpectedEndOfBuffer();
         }
         const value = self.bytes[self.pos];
         self.pos += 1;
@@ -73,7 +73,7 @@ pub fn decodeLiftedString(bytes: []const u8) err.CallError![]const u8 {
 pub fn decodeString(reader: *BufferReader) err.CallError![]const u8 {
     const len = try reader.readI32();
     if (len < 0) {
-        return error.UnexpectedRustBufferData;
+        return unexpectedRustBufferData();
     }
     return reader.readSlice(@intCast(len));
 }
@@ -85,7 +85,7 @@ pub fn decodeOptionalBytes(
     return switch (try reader.readInt8()) {
         0 => null,
         1 => @as(?[]u8, try decodeOwnedBytes(allocator, reader)),
-        else => error.UnexpectedEnumTag,
+        else => unexpectedEnumTag(),
     };
 }
 
@@ -100,7 +100,7 @@ pub fn decodeOptionalWriteHandle(reader: *BufferReader) err.CallError!?WriteHand
     return switch (try reader.readInt8()) {
         0 => null,
         1 => try decodeWriteHandle(reader),
-        else => error.UnexpectedEnumTag,
+        else => unexpectedEnumTag(),
     };
 }
 
@@ -111,7 +111,7 @@ pub fn decodeOptionalKeyValue(
     return switch (try reader.readInt8()) {
         0 => null,
         1 => try decodeKeyValue(allocator, reader),
-        else => error.UnexpectedEnumTag,
+        else => unexpectedEnumTag(),
     };
 }
 
@@ -127,6 +127,7 @@ pub fn encodeKeyRange(range: KeyRange) (std.mem.Allocator.Error || err.CallError
     writer.writeBool(range.end_inclusive);
 
     if (writer.pos != encoded.len) {
+        err.rememberInternalMessage("failed to encode key range");
         return error.Internal;
     }
 
@@ -146,14 +147,14 @@ pub fn decodeApiError(reader: *BufferReader) err.CallError!err.ApiErrorPayload {
         4 => .{ .invalid = try decodeString(reader) },
         5 => .{ .data = try decodeString(reader) },
         6 => .{ .internal = try decodeString(reader) },
-        else => error.UnexpectedEnumTag,
+        else => unexpectedEnumTag(),
     };
 }
 
 fn decodeBytes(reader: *BufferReader) err.CallError![]const u8 {
     const len = try reader.readI32();
     if (len < 0) {
-        return error.UnexpectedRustBufferData;
+        return unexpectedRustBufferData();
     }
     return reader.readSlice(@intCast(len));
 }
@@ -191,7 +192,7 @@ fn decodeCloseReason(reader: *BufferReader) err.CallError!err.CloseReason {
         2 => .fenced,
         3 => .background_panic,
         4 => .unknown,
-        else => error.UnexpectedEnumTag,
+        else => unexpectedEnumTag(),
     };
 }
 
@@ -199,7 +200,7 @@ fn decodeOptionalI64(reader: *BufferReader) err.CallError!?i64 {
     return switch (try reader.readInt8()) {
         0 => null,
         1 => try reader.readI64(),
-        else => error.UnexpectedEnumTag,
+        else => unexpectedEnumTag(),
     };
 }
 
@@ -251,9 +252,29 @@ fn addOptionalBytesLen(base: usize, value: ?[]const u8) err.CallError!usize {
     var total = base + 1;
     if (value) |bytes| {
         if (bytes.len > std.math.maxInt(i32)) {
-            return error.BufferTooLarge;
+            return bufferTooLarge(bytes.len);
         }
         total += 4 + bytes.len;
     }
     return total;
+}
+
+fn bufferTooLarge(len: usize) err.CallError {
+    err.rememberBufferTooLarge(len, std.math.maxInt(i32));
+    return error.BufferTooLarge;
+}
+
+fn unexpectedEndOfBuffer() err.CallError {
+    err.rememberUnexpectedEndOfBuffer();
+    return error.UnexpectedEndOfBuffer;
+}
+
+fn unexpectedEnumTag() err.CallError {
+    err.rememberUnexpectedEnumTag();
+    return error.UnexpectedEnumTag;
+}
+
+fn unexpectedRustBufferData() err.CallError {
+    err.rememberUnexpectedRustBufferData();
+    return error.UnexpectedRustBufferData;
 }

@@ -1,5 +1,8 @@
 pub const CallError = @import("error.zig").CallError;
+pub const CallErrorDetail = @import("error.zig").CallErrorDetail;
 pub const CloseReason = @import("error.zig").CloseReason;
+pub const clearLastCallErrorDetail = @import("error.zig").clearLastCallErrorDetail;
+pub const takeLastCallErrorDetail = @import("error.zig").takeLastCallErrorDetail;
 pub const IsolationLevel = @import("config.zig").IsolationLevel;
 pub const DurabilityLevel = @import("config.zig").DurabilityLevel;
 pub const FlushOptions = @import("config.zig").FlushOptions;

@@ -1,4 +1,5 @@
 const std = @import("std");
+const err = @import("error.zig");
 const ffi = @import("ffi.zig");
 const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
@@ -72,7 +73,11 @@ pub fn waitPointer(handle: u64) rust_call.CallError!?*anyopaque {
     var status = std.mem.zeroes(ffi.c.RustCallStatus);
     const value = ffi.c.ffi_slatedb_uniffi_rust_future_complete_pointer(handle, &status);
     try rust_call.checkStatus(status);
-    return value orelse error.Internal;
+    if (value == null) {
+        err.rememberInternalMessage("Rust future returned a null pointer");
+        return error.Internal;
+    }
+    return value;
 }
 
 pub fn waitVoid(handle: u64) rust_call.CallError!void {

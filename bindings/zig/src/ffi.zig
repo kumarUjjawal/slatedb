@@ -60,11 +60,13 @@ const checksums = struct {
 
 pub fn ensureCompatible() err.CallError!void {
     if (abi_checked) {
+        err.clearLastCallErrorDetail();
         return;
     }
 
     const contract_version = c.ffi_slatedb_uniffi_uniffi_contract_version();
     if (contract_version != bindings_contract_version) {
+        err.rememberContractVersionMismatch(bindings_contract_version, contract_version);
         std.log.err(
             "SlateDB UniFFI contract version mismatch: Zig expects {d}, dylib has {d}",
             .{ bindings_contract_version, contract_version },
@@ -304,11 +306,13 @@ pub fn ensureCompatible() err.CallError!void {
     );
 
     abi_checked = true;
+    err.clearLastCallErrorDetail();
 }
 
 fn expectChecksum(name: []const u8, expected: u16, actual: anytype) err.CallError!void {
     const actual_value: u16 = @intCast(actual);
     if (actual_value != expected) {
+        err.rememberApiChecksumMismatch(name, expected, actual_value);
         std.log.err(
             "{s} mismatch: Zig expects {d}, dylib has {d}",
             .{ name, expected, actual_value },

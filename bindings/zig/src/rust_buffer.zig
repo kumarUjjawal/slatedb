@@ -1,4 +1,5 @@
 const std = @import("std");
+const err = @import("error.zig");
 const ffi = @import("ffi.zig");
 const rust_call = @import("rust_call.zig");
 
@@ -10,6 +11,7 @@ pub const RustBuffer = struct {
             return .{ .raw = std.mem.zeroes(ffi.c.RustBuffer) };
         }
         if (input.len > std.math.maxInt(i32)) {
+            err.rememberBufferTooLarge(input.len, std.math.maxInt(i32));
             return error.BufferTooLarge;
         }
 
@@ -27,6 +29,7 @@ pub const RustBuffer = struct {
         value: []const u8,
     ) (std.mem.Allocator.Error || rust_call.CallError)!RustBuffer {
         if (value.len > std.math.maxInt(i32)) {
+            err.rememberBufferTooLarge(value.len, std.math.maxInt(i32));
             return error.BufferTooLarge;
         }
 
@@ -62,7 +65,7 @@ pub const RustBuffer = struct {
 
         var status = std.mem.zeroes(ffi.c.RustCallStatus);
         ffi.c.ffi_slatedb_uniffi_rustbuffer_free(self.raw, &status);
-        rust_call.checkStatus(status) catch |call_err| {
+        rust_call.checkStatusSilent(status) catch |call_err| {
             std.log.err("failed to free RustBuffer: {s}", .{@errorName(call_err)});
         };
         self.raw = std.mem.zeroes(ffi.c.RustBuffer);
