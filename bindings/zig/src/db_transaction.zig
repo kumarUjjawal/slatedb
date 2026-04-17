@@ -197,6 +197,148 @@ pub const DbTransaction = struct {
         try rust_future.waitVoid(future);
     }
 
+    pub fn merge(
+        self: *DbTransaction,
+        io: std.Io,
+        key: []const u8,
+        operand: []const u8,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!void) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+
+        const tx_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+        const operand_buffer = rust_buffer.RustBuffer.fromSerializedBytes(operand) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbtransaction_merge(
+            tx_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+        );
+
+        return io.async(waitVoidTask, .{ &self.handle, future });
+    }
+
+    pub fn mergeBlocking(
+        self: *DbTransaction,
+        key: []const u8,
+        operand: []const u8,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const tx_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const operand_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(operand);
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbtransaction_merge(
+            tx_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+        );
+
+        try rust_future.waitVoid(future);
+    }
+
+    pub fn mergeWithOptions(
+        self: *DbTransaction,
+        io: std.Io,
+        key: []const u8,
+        operand: []const u8,
+        options: config.MergeOptions,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!void) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+
+        const tx_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+        const operand_buffer = rust_buffer.RustBuffer.fromSerializedBytes(operand) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+        const options_buffer = config.encodeMergeOptions(options) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!void,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbtransaction_merge_with_options(
+            tx_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+            options_buffer.raw,
+        );
+
+        return io.async(waitVoidTask, .{ &self.handle, future });
+    }
+
+    pub fn mergeWithOptionsBlocking(
+        self: *DbTransaction,
+        key: []const u8,
+        operand: []const u8,
+        options: config.MergeOptions,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const tx_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const operand_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(operand);
+        const options_buffer = try config.encodeMergeOptions(options);
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_dbtransaction_merge_with_options(
+            tx_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+            options_buffer.raw,
+        );
+
+        try rust_future.waitVoid(future);
+    }
+
     pub fn get(
         self: *DbTransaction,
         io: std.Io,

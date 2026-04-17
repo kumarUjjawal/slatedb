@@ -27,7 +27,7 @@ test "WalReader listing and navigation" {
     const files = try reader.listBlocking(std.testing.allocator, null, null);
     defer slatedb.WalFile.deinitSlice(std.testing.allocator, files);
 
-    try std.testing.expect(files.len >= 3);
+    try std.testing.expect(files.len >= 5);
 
     var ids = try std.testing.allocator.alloc(u64, files.len);
     defer std.testing.allocator.free(ids);
@@ -73,7 +73,7 @@ test "WalReader metadata and rows" {
     const files = try reader.listBlocking(std.testing.allocator, null, null);
     defer slatedb.WalFile.deinitSlice(std.testing.allocator, files);
 
-    try std.testing.expect(files.len >= 3);
+    try std.testing.expect(files.len >= 5);
 
     var all_rows = std.ArrayList(slatedb.RowEntry).empty;
     defer {
@@ -100,11 +100,16 @@ test "WalReader metadata and rows" {
         }
     }
 
-    try std.testing.expectEqual(@as(usize, 4), all_rows.items.len);
+    try std.testing.expectEqual(@as(usize, 9), all_rows.items.len);
     try expectRow(&all_rows.items[0], .value, "a", "1");
     try expectRow(&all_rows.items[1], .value, "b", "2");
     try expectRow(&all_rows.items[2], .tombstone, "a", null);
-    try expectRow(&all_rows.items[3], .value, "c", "3");
+    try expectRow(&all_rows.items[3], .merge, "m-db", "db-plain");
+    try expectRow(&all_rows.items[4], .merge, "m-db-opt", "db-opt");
+    try expectRow(&all_rows.items[5], .merge, "m-batch", "batch-plain");
+    try expectRow(&all_rows.items[6], .merge, "m-batch-opt", "batch-opt");
+    try expectRow(&all_rows.items[7], .merge, "m-tx", "tx-plain");
+    try expectRow(&all_rows.items[8], .merge, "m-tx-opt", "tx-opt");
 }
 
 test "WalReader missing file metadata fails" {
@@ -143,14 +148,48 @@ fn seedWalFiles(store: *slatedb.ObjectStore) !void {
     var db = try builder.buildBlocking();
     defer db.deinit();
 
-    _ = try db.putBlocking("a", "1");
-    _ = try db.putBlocking("b", "2");
+    const first_put = try db.putBlocking("a", "1");
+    try std.testing.expect(first_put.seqnum > 0);
+
+    const second_put = try db.putBlocking("b", "2");
+    try std.testing.expect(second_put.seqnum > first_put.seqnum);
     try db.flushWithOptionsBlocking(.{ .flush_type = .wal });
 
-    _ = try db.deleteBlocking("a");
+    const delete_handle = try db.deleteBlocking("a");
+    try std.testing.expect(delete_handle.seqnum > second_put.seqnum);
     try db.flushWithOptionsBlocking(.{ .flush_type = .wal });
 
-    _ = try db.putBlocking("c", "3");
+    const merge_handle = try db.mergeBlocking("m-db", "db-plain");
+    try std.testing.expect(merge_handle.seqnum > delete_handle.seqnum);
+
+    const merge_with_options_handle = try db.mergeWithOptionsBlocking(
+        "m-db-opt",
+        "db-opt",
+        .{ .ttl = .default },
+        .{},
+    );
+    try std.testing.expect(merge_with_options_handle.seqnum > merge_handle.seqnum);
+    try db.flushWithOptionsBlocking(.{ .flush_type = .wal });
+
+    var batch = try slatedb.WriteBatch.init();
+    defer batch.deinit();
+
+    try batch.merge("m-batch", "batch-plain");
+    try batch.mergeWithOptions("m-batch-opt", "batch-opt", .{ .ttl = .default });
+
+    const batch_handle = try db.writeBlocking(&batch);
+    try std.testing.expect(batch_handle.seqnum > merge_with_options_handle.seqnum);
+    try db.flushWithOptionsBlocking(.{ .flush_type = .wal });
+
+    var tx = try db.beginBlocking(.snapshot);
+    defer tx.deinit();
+
+    try tx.mergeBlocking("m-tx", "tx-plain");
+    try tx.mergeWithOptionsBlocking("m-tx-opt", "tx-opt", .{ .ttl = .default });
+
+    const tx_handle = try tx.commitBlocking();
+    try std.testing.expect(tx_handle != null);
+    try std.testing.expect(tx_handle.?.seqnum > batch_handle.seqnum);
     try db.flushWithOptionsBlocking(.{ .flush_type = .wal });
 
     try db.shutdownBlocking();

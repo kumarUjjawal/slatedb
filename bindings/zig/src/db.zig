@@ -917,6 +917,172 @@ pub const Db = struct {
         return handle;
     }
 
+    pub fn merge(
+        self: *Db,
+        io: std.Io,
+        key: []const u8,
+        operand: []const u8,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!WriteHandle) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+        const operand_buffer = rust_buffer.RustBuffer.fromSerializedBytes(operand) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_merge(
+            db_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+        );
+
+        return io.async(waitPutTask, .{ &self.handle, future });
+    }
+
+    pub fn mergeBlocking(
+        self: *Db,
+        key: []const u8,
+        operand: []const u8,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const operand_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(operand);
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_merge(
+            db_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+        );
+
+        var result_buffer = try rust_future.waitRustBuffer(future);
+        defer result_buffer.deinit();
+
+        var reader = codec.BufferReader.init(result_buffer.bytes());
+        const handle = try codec.decodeWriteHandle(&reader);
+        try reader.finish();
+        return handle;
+    }
+
+    pub fn mergeWithOptions(
+        self: *Db,
+        io: std.Io,
+        key: []const u8,
+        operand: []const u8,
+        merge_options: config.MergeOptions,
+        write_options: config.WriteOptions,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!WriteHandle) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const key_buffer = rust_buffer.RustBuffer.fromSerializedBytes(key) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+        const operand_buffer = rust_buffer.RustBuffer.fromSerializedBytes(operand) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+        const merge_options_buffer = config.encodeMergeOptions(merge_options) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+        const write_options_buffer = config.encodeWriteOptions(write_options) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_merge_with_options(
+            db_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+            merge_options_buffer.raw,
+            write_options_buffer.raw,
+        );
+
+        return io.async(waitPutTask, .{ &self.handle, future });
+    }
+
+    pub fn mergeWithOptionsBlocking(
+        self: *Db,
+        key: []const u8,
+        operand: []const u8,
+        merge_options: config.MergeOptions,
+        write_options: config.WriteOptions,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!WriteHandle {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const operand_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(operand);
+        const merge_options_buffer = try config.encodeMergeOptions(merge_options);
+        const write_options_buffer = try config.encodeWriteOptions(write_options);
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_merge_with_options(
+            db_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+            merge_options_buffer.raw,
+            write_options_buffer.raw,
+        );
+
+        var result_buffer = try rust_future.waitRustBuffer(future);
+        defer result_buffer.deinit();
+
+        var reader = codec.BufferReader.init(result_buffer.bytes());
+        const handle = try codec.decodeWriteHandle(&reader);
+        try reader.finish();
+        return handle;
+    }
+
     pub fn flush(self: *Db, io: std.Io) std.Io.Future(rust_call.CallError!void) {
         ffi.ensureCompatible() catch |call_err| {
             return rust_future.ready(rust_call.CallError!void, call_err);

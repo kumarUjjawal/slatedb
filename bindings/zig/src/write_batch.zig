@@ -93,6 +93,55 @@ pub const WriteBatch = struct {
         try rust_call.checkStatus(status);
     }
 
+    pub fn merge(
+        self: *WriteBatch,
+        key: []const u8,
+        operand: []const u8,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const batch_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const operand_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(operand);
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_writebatch_merge(
+            batch_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
+    pub fn mergeWithOptions(
+        self: *WriteBatch,
+        key: []const u8,
+        operand: []const u8,
+        options: config.MergeOptions,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const batch_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const key_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(key);
+        const operand_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(operand);
+        const options_buffer = try config.encodeMergeOptions(options);
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.c.uniffi_slatedb_uniffi_fn_method_writebatch_merge_with_options(
+            batch_handle,
+            key_buffer.raw,
+            operand_buffer.raw,
+            options_buffer.raw,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
     pub fn deinit(self: *WriteBatch) void {
         self.handle.deinit();
     }

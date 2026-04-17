@@ -25,6 +25,8 @@ const checksums = struct {
     const method_db_get_key_value = 57684;
     const method_db_get_key_value_with_options = 20648;
     const method_db_get_with_options = 20501;
+    const method_db_merge = 17999;
+    const method_db_merge_with_options = 61231;
     const method_db_metrics = 63278;
     const method_db_put = 59996;
     const method_db_put_with_options = 58268;
@@ -53,6 +55,8 @@ const checksums = struct {
     const method_dbtransaction_commit = 17358;
     const method_dbtransaction_get = 27661;
     const method_dbtransaction_id = 16876;
+    const method_dbtransaction_merge = 28294;
+    const method_dbtransaction_merge_with_options = 63505;
     const method_dbtransaction_put = 30341;
     const method_dbtransaction_rollback = 23348;
     const method_dbtransaction_seqnum = 60506;
@@ -65,6 +69,8 @@ const checksums = struct {
     const method_walreader_get = 40699;
     const method_walreader_list = 62366;
     const method_writebatch_delete = 37032;
+    const method_writebatch_merge = 51939;
+    const method_writebatch_merge_with_options = 30105;
     const method_writebatch_put = 35694;
     const method_writebatch_put_with_options = 23639;
     const constructor_walreader_new = 791;
@@ -160,6 +166,16 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_db_get_with_options",
         checksums.method_db_get_with_options,
         c.uniffi_slatedb_uniffi_checksum_method_db_get_with_options(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_merge",
+        checksums.method_db_merge,
+        c.uniffi_slatedb_uniffi_checksum_method_db_merge(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_merge_with_options",
+        checksums.method_db_merge_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_db_merge_with_options(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_metrics",
@@ -302,6 +318,16 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_id(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_merge",
+        checksums.method_dbtransaction_merge,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_merge(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbtransaction_merge_with_options",
+        checksums.method_dbtransaction_merge_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_merge_with_options(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbtransaction_put",
         checksums.method_dbtransaction_put,
         c.uniffi_slatedb_uniffi_checksum_method_dbtransaction_put(),
@@ -365,6 +391,16 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_writebatch_delete",
         checksums.method_writebatch_delete,
         c.uniffi_slatedb_uniffi_checksum_method_writebatch_delete(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_writebatch_merge",
+        checksums.method_writebatch_merge,
+        c.uniffi_slatedb_uniffi_checksum_method_writebatch_merge(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_writebatch_merge_with_options",
+        checksums.method_writebatch_merge_with_options,
+        c.uniffi_slatedb_uniffi_checksum_method_writebatch_merge_with_options(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_writebatch_put",
