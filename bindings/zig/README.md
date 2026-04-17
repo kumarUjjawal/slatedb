@@ -8,10 +8,13 @@ future-based async calls built on Zig `std.Io`.
 
 ## What Works Today
 
+Core:
 - links against the existing `slatedb-uniffi` shared library
 - uses the checked-in UniFFI C header
 - validates the UniFFI contract version and the first API checksums
-- includes a first blocking database path
+- includes Linux CI coverage for the Zig binding
+
+Builders and object store:
 - supports `ObjectStore.resolve`
 - supports `DbBuilder.init`
 - supports `DbBuilder.build`
@@ -19,63 +22,140 @@ future-based async calls built on Zig `std.Io`.
 - supports `DbReaderBuilder.init`
 - supports `DbReaderBuilder.build`
 - supports `DbReaderBuilder.buildBlocking`
+- supports `DbReaderBuilder.withOptions`
+
+Database:
 - supports `Db.status`
 - supports `Db.put`
 - supports `Db.putBlocking`
+- supports `Db.putWithOptions`
+- supports `Db.putWithOptionsBlocking`
 - supports `Db.get`
 - supports `Db.getBlocking`
+- supports `Db.getWithOptions`
+- supports `Db.getWithOptionsBlocking`
+- supports `Db.getKeyValue`
+- supports `Db.getKeyValueBlocking`
+- supports `Db.getKeyValueWithOptions`
+- supports `Db.getKeyValueWithOptionsBlocking`
 - supports `Db.scan`
 - supports `Db.scanBlocking`
 - supports `Db.scanPrefix`
 - supports `Db.scanPrefixBlocking`
+- supports `Db.scanWithOptions`
+- supports `Db.scanWithOptionsBlocking`
+- supports `Db.scanPrefixWithOptions`
+- supports `Db.scanPrefixWithOptionsBlocking`
 - supports `Db.delete`
 - supports `Db.deleteBlocking`
+- supports `Db.deleteWithOptions`
+- supports `Db.deleteWithOptionsBlocking`
 - supports `Db.snapshot`
 - supports `Db.snapshotBlocking`
 - supports `Db.write`
 - supports `Db.writeBlocking`
+- supports `Db.writeWithOptions`
+- supports `Db.writeWithOptionsBlocking`
+- supports `Db.flush`
+- supports `Db.flushBlocking`
+- supports `Db.flushWithOptions`
+- supports `Db.flushWithOptionsBlocking`
 - supports `Db.shutdown`
 - supports `Db.shutdownBlocking`
 - supports `Db.begin`
 - supports `Db.beginBlocking`
+
+Reader:
 - supports `DbReader.get`
 - supports `DbReader.getBlocking`
+- supports `DbReader.getWithOptions`
+- supports `DbReader.getWithOptionsBlocking`
 - supports `DbReader.scan`
 - supports `DbReader.scanBlocking`
 - supports `DbReader.scanPrefix`
 - supports `DbReader.scanPrefixBlocking`
+- supports `DbReader.scanWithOptions`
+- supports `DbReader.scanWithOptionsBlocking`
+- supports `DbReader.scanPrefixWithOptions`
+- supports `DbReader.scanPrefixWithOptionsBlocking`
 - supports `DbReader.shutdown`
 - supports `DbReader.shutdownBlocking`
+
+Snapshots and transactions:
 - supports `DbSnapshot.get`
 - supports `DbSnapshot.getBlocking`
+- supports `DbSnapshot.getWithOptions`
+- supports `DbSnapshot.getWithOptionsBlocking`
+- supports `DbSnapshot.getKeyValue`
+- supports `DbSnapshot.getKeyValueBlocking`
+- supports `DbSnapshot.getKeyValueWithOptions`
+- supports `DbSnapshot.getKeyValueWithOptionsBlocking`
+- supports `DbSnapshot.scan`
+- supports `DbSnapshot.scanBlocking`
+- supports `DbSnapshot.scanPrefix`
+- supports `DbSnapshot.scanPrefixBlocking`
+- supports `DbSnapshot.scanWithOptions`
+- supports `DbSnapshot.scanWithOptionsBlocking`
+- supports `DbSnapshot.scanPrefixWithOptions`
+- supports `DbSnapshot.scanPrefixWithOptionsBlocking`
 - supports `DbTransaction.id`
 - supports `DbTransaction.seqnum`
 - supports `DbTransaction.put`
 - supports `DbTransaction.putBlocking`
+- supports `DbTransaction.putWithOptions`
+- supports `DbTransaction.putWithOptionsBlocking`
 - supports `DbTransaction.get`
 - supports `DbTransaction.getBlocking`
+- supports `DbTransaction.getWithOptions`
+- supports `DbTransaction.getWithOptionsBlocking`
+- supports `DbTransaction.getKeyValue`
+- supports `DbTransaction.getKeyValueBlocking`
+- supports `DbTransaction.getKeyValueWithOptions`
+- supports `DbTransaction.getKeyValueWithOptionsBlocking`
+- supports `DbTransaction.scan`
+- supports `DbTransaction.scanBlocking`
+- supports `DbTransaction.scanPrefix`
+- supports `DbTransaction.scanPrefixBlocking`
+- supports `DbTransaction.scanWithOptions`
+- supports `DbTransaction.scanWithOptionsBlocking`
+- supports `DbTransaction.scanPrefixWithOptions`
+- supports `DbTransaction.scanPrefixWithOptionsBlocking`
 - supports `DbTransaction.commit`
 - supports `DbTransaction.commitBlocking`
+- supports `DbTransaction.commitWithOptions`
+- supports `DbTransaction.commitWithOptionsBlocking`
 - supports `DbTransaction.rollback`
 - supports `DbTransaction.rollbackBlocking`
+
+Iterators, batches, and exported types:
 - supports `DbIterator.next`
 - supports `DbIterator.nextBlocking`
 - supports `DbIterator.seek`
 - supports `DbIterator.seekBlocking`
 - exports `KeyRange`
 - exports `KeyValue`
+- exports `DurabilityLevel`
+- exports `FlushOptions`
+- exports `FlushType`
+- exports `MergeOptions`
+- exports `PutOptions`
+- exports `ReadOptions`
+- exports `ReaderOptions`
+- exports `ScanOptions`
+- exports `Ttl`
+- exports `WriteHandle`
+- exports `WriteOptions`
 - supports `WriteBatch.init`
 - supports `WriteBatch.put`
+- supports `WriteBatch.putWithOptions`
 - supports `WriteBatch.delete`
 
 ## What Is Next
 
 - richer typed error details
-- reader, read, and scan option structs
 - metrics support
 - logging and merge-operator callbacks
 - WAL reader support
-- CI coverage for the Zig binding
 
 ## Zig Version
 
@@ -110,11 +190,16 @@ cd bindings/zig
 zig build test
 ```
 
-If the shared library lives somewhere else, pass:
+The build script adds an rpath for the default shared library directory. If the
+library lives somewhere else, pass:
 
 ```bash
 zig build test -Dslatedb-lib-dir=/absolute/path/to/target/debug
 ```
+
+If your runtime loader still cannot find `libslatedb_uniffi`, set
+`LD_LIBRARY_PATH` on Linux or `DYLD_LIBRARY_PATH` on macOS before running
+`zig build test`.
 
 ## Async Style
 
@@ -147,7 +232,7 @@ defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 
 ## Current Status
 
-The Zig binding now covers the core async and blocking database path, reader
-reads, scans, iterators, write batches, snapshots, and basic transactions. It
-is still behind the Go binding for option structs, callbacks, metrics, WAL
-access, and CI coverage.
+The Zig binding now covers the main async and blocking database path, option
+structs and option-based methods, reader reads and scans, write batches,
+snapshots, transactions, iterators, and Linux CI. It is still behind the Go
+binding for richer typed errors, metrics, callbacks, and WAL support.
