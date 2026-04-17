@@ -16,6 +16,9 @@ future-based async calls built on Zig `std.Io`.
 - supports `DbBuilder.init`
 - supports `DbBuilder.build`
 - supports `DbBuilder.buildBlocking`
+- supports `DbReaderBuilder.init`
+- supports `DbReaderBuilder.build`
+- supports `DbReaderBuilder.buildBlocking`
 - supports `Db.status`
 - supports `Db.put`
 - supports `Db.putBlocking`
@@ -35,6 +38,14 @@ future-based async calls built on Zig `std.Io`.
 - supports `Db.shutdownBlocking`
 - supports `Db.begin`
 - supports `Db.beginBlocking`
+- supports `DbReader.get`
+- supports `DbReader.getBlocking`
+- supports `DbReader.scan`
+- supports `DbReader.scanBlocking`
+- supports `DbReader.scanPrefix`
+- supports `DbReader.scanPrefixBlocking`
+- supports `DbReader.shutdown`
+- supports `DbReader.shutdownBlocking`
 - supports `DbSnapshot.get`
 - supports `DbSnapshot.getBlocking`
 - supports `DbTransaction.id`
@@ -59,8 +70,8 @@ future-based async calls built on Zig `std.Io`.
 
 ## What Is Next
 
-- reader support
 - richer typed error details
+- reader, read, and scan option structs
 - metrics support
 - logging and merge-operator callbacks
 - WAL reader support
@@ -136,7 +147,7 @@ defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 
 ## Current Status
 
-The Zig binding now covers the core async and blocking database path, scans,
-iterators, write batches, snapshots, and basic transactions. It is still behind
-the Go binding for reader APIs, callbacks, metrics, WAL access, and CI
-coverage.
+The Zig binding now covers the core async and blocking database path, reader
+reads, scans, iterators, write batches, snapshots, and basic transactions. It
+is still behind the Go binding for option structs, callbacks, metrics, WAL
+access, and CI coverage.
