@@ -208,6 +208,38 @@ jobs:
           LD_LIBRARY_PATH: "${{ github.workspace }}/target/debug:${LD_LIBRARY_PATH}"
         run: go test ./...
 
+  bindings-zig:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config
+
+      - name: Install Zig 0.16.0
+        run: |
+          curl -L -o /tmp/zig.tar.xz https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
+          tar -xf /tmp/zig.tar.xz -C /tmp
+          echo "/tmp/zig-x86_64-linux-0.16.0" >> "${GITHUB_PATH}"
+
+      - name: Install uniffi-bindgen-go
+        run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.7.0+v0.31.0
+
+      - name: Generate Zig header
+        run: ./scripts/generate-zig-header.sh
+
+      - name: Check generated Zig header
+        run: git diff --exit-code -- bindings/zig/include
+
+      - name: Run Zig tests (bindings/zig)
+        working-directory: ./bindings/zig
+        env:
+          LD_LIBRARY_PATH: "${{ github.workspace }}/target/debug:${LD_LIBRARY_PATH}"
+        run: zig build test
+
   bindings-java:
     runs-on: ubuntu-latest
     needs: tests
