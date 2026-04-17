@@ -24,6 +24,8 @@ bindings/node/slatedb-ffi.js
 bindings/node/slatedb-ffi.d.ts
 bindings/node/runtime/
 bindings/node/prebuilds/
+**/.zig-cache/
+**/zig-out/
 .claude/
 CLAUDE.md
 website/src/content/docs/rfcs/*.md

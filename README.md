@@ -121,6 +121,7 @@ Visit [slatedb.io](https://slatedb.io) to learn more.
 - [Python](https://github.com/slatedb/slatedb/tree/main/bindings/python) (official)
 - [Ruby](https://github.com/catkins/slatedb-rb)
 - [TypeScript](https://github.com/gadget-inc/slatedb-node)
+- [Zig](https://github.com/slatedb/slatedb/tree/main/bindings/zig) (official, experimental)
 
 ## Features
 
