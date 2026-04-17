@@ -4,10 +4,12 @@ const config = @import("config.zig");
 const db_snapshot = @import("db_snapshot.zig");
 const db_transaction = @import("db_transaction.zig");
 const ffi = @import("ffi.zig");
+const iterator = @import("iterator.zig");
 const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
 const rust_call = @import("rust_call.zig");
 const rust_future = @import("rust_future.zig");
+const types = @import("types.zig");
 const write_batch = @import("write_batch.zig");
 
 pub const WriteHandle = codec.WriteHandle;
@@ -224,6 +226,110 @@ pub const Db = struct {
         return value;
     }
 
+    pub fn scan(
+        self: *Db,
+        io: std.Io,
+        range: types.KeyRange,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator,
+                call_err,
+            );
+        };
+
+        const range_buffer = codec.encodeKeyRange(range) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_scan(
+            db_handle,
+            range_buffer.raw,
+        );
+        return io.async(waitScanTask, .{ &self.handle, future });
+    }
+
+    pub fn scanBlocking(
+        self: *Db,
+        range: types.KeyRange,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const range_buffer = try codec.encodeKeyRange(range);
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_scan(
+            db_handle,
+            range_buffer.raw,
+        );
+        const raw_iterator = try rust_future.waitPointer(future);
+        return iterator.DbIterator.fromRaw(raw_iterator);
+    }
+
+    pub fn scanPrefix(
+        self: *Db,
+        io: std.Io,
+        prefix: []const u8,
+    ) std.Io.Future((std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator) {
+        ffi.ensureCompatible() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator,
+                call_err,
+            );
+        };
+
+        const db_handle = self.handle.beginRustCall() catch |call_err| {
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator,
+                call_err,
+            );
+        };
+
+        const prefix_buffer = rust_buffer.RustBuffer.fromSerializedBytes(prefix) catch |call_err| {
+            self.handle.finishRustCall();
+            return rust_future.ready(
+                (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator,
+                call_err,
+            );
+        };
+
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_scan_prefix(
+            db_handle,
+            prefix_buffer.raw,
+        );
+        return io.async(waitScanTask, .{ &self.handle, future });
+    }
+
+    pub fn scanPrefixBlocking(
+        self: *Db,
+        prefix: []const u8,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const prefix_buffer = try rust_buffer.RustBuffer.fromSerializedBytes(prefix);
+        const future = ffi.c.uniffi_slatedb_uniffi_fn_method_db_scan_prefix(
+            db_handle,
+            prefix_buffer.raw,
+        );
+        const raw_iterator = try rust_future.waitPointer(future);
+        return iterator.DbIterator.fromRaw(raw_iterator);
+    }
+
     pub fn delete(
         self: *Db,
         io: std.Io,
@@ -426,6 +532,16 @@ fn waitGetTask(
     const value = try codec.decodeOptionalBytes(allocator, &reader);
     try reader.finish();
     return value;
+}
+
+fn waitScanTask(
+    owner: *object_handle.ObjectHandle,
+    handle: u64,
+) (std.mem.Allocator.Error || rust_call.CallError)!iterator.DbIterator {
+    defer owner.finishRustCall();
+
+    const raw_iterator = try rust_future.waitPointer(handle);
+    return iterator.DbIterator.fromRaw(raw_iterator);
 }
 
 fn waitDeleteTask(

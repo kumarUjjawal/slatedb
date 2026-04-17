@@ -1,10 +1,11 @@
 const std = @import("std");
 const err = @import("error.zig");
+const rust_buffer = @import("rust_buffer.zig");
+const types = @import("types.zig");
 
-pub const WriteHandle = struct {
-    seqnum: u64,
-    create_ts: i64,
-};
+pub const WriteHandle = types.WriteHandle;
+pub const KeyRange = types.KeyRange;
+pub const KeyValue = types.KeyValue;
 
 pub const BufferReader = struct {
     bytes: []const u8,
@@ -83,11 +84,7 @@ pub fn decodeOptionalBytes(
 ) (std.mem.Allocator.Error || err.CallError)!?[]u8 {
     return switch (try reader.readInt8()) {
         0 => null,
-        1 => {
-            const bytes = try decodeBytes(reader);
-            const owned = try allocator.dupe(u8, bytes);
-            return @as(?[]u8, owned);
-        },
+        1 => @as(?[]u8, try decodeOwnedBytes(allocator, reader)),
         else => error.UnexpectedEnumTag,
     };
 }
@@ -105,6 +102,35 @@ pub fn decodeOptionalWriteHandle(reader: *BufferReader) err.CallError!?WriteHand
         1 => try decodeWriteHandle(reader),
         else => error.UnexpectedEnumTag,
     };
+}
+
+pub fn decodeOptionalKeyValue(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)!?KeyValue {
+    return switch (try reader.readInt8()) {
+        0 => null,
+        1 => try decodeKeyValue(allocator, reader),
+        else => error.UnexpectedEnumTag,
+    };
+}
+
+pub fn encodeKeyRange(range: KeyRange) (std.mem.Allocator.Error || err.CallError)!rust_buffer.RustBuffer {
+    const total_len = try keyRangeEncodedLen(range);
+    const encoded = try std.heap.page_allocator.alloc(u8, total_len);
+    defer std.heap.page_allocator.free(encoded);
+
+    var writer = BufferWriter.init(encoded);
+    try writer.writeOptionalBytes(range.start);
+    writer.writeBool(range.start_inclusive);
+    try writer.writeOptionalBytes(range.end);
+    writer.writeBool(range.end_inclusive);
+
+    if (writer.pos != encoded.len) {
+        return error.Internal;
+    }
+
+    return rust_buffer.RustBuffer.fromBytes(encoded);
 }
 
 pub fn decodeApiError(reader: *BufferReader) err.CallError!err.ApiErrorPayload {
@@ -132,6 +158,33 @@ fn decodeBytes(reader: *BufferReader) err.CallError![]const u8 {
     return reader.readSlice(@intCast(len));
 }
 
+fn decodeOwnedBytes(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)![]u8 {
+    const bytes = try decodeBytes(reader);
+    return allocator.dupe(u8, bytes);
+}
+
+fn decodeKeyValue(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)!KeyValue {
+    const key = try decodeOwnedBytes(allocator, reader);
+    errdefer allocator.free(key);
+
+    const value = try decodeOwnedBytes(allocator, reader);
+    errdefer allocator.free(value);
+
+    return .{
+        .key = key,
+        .value = value,
+        .seq = try reader.readU64(),
+        .create_ts = try reader.readI64(),
+        .expire_ts = try decodeOptionalI64(reader),
+    };
+}
+
 fn decodeCloseReason(reader: *BufferReader) err.CallError!err.CloseReason {
     return switch (try reader.readI32()) {
         1 => .clean,
@@ -140,4 +193,67 @@ fn decodeCloseReason(reader: *BufferReader) err.CallError!err.CloseReason {
         4 => .unknown,
         else => error.UnexpectedEnumTag,
     };
+}
+
+fn decodeOptionalI64(reader: *BufferReader) err.CallError!?i64 {
+    return switch (try reader.readInt8()) {
+        0 => null,
+        1 => try reader.readI64(),
+        else => error.UnexpectedEnumTag,
+    };
+}
+
+const BufferWriter = struct {
+    bytes: []u8,
+    pos: usize = 0,
+
+    fn init(bytes: []u8) BufferWriter {
+        return .{ .bytes = bytes };
+    }
+
+    fn writeBool(self: *BufferWriter, value: bool) void {
+        self.bytes[self.pos] = if (value) 1 else 0;
+        self.pos += 1;
+    }
+
+    fn writeOptionalBytes(self: *BufferWriter, value: ?[]const u8) err.CallError!void {
+        if (value) |bytes| {
+            self.bytes[self.pos] = 1;
+            self.pos += 1;
+            try self.writeBytes(bytes);
+        } else {
+            self.bytes[self.pos] = 0;
+            self.pos += 1;
+        }
+    }
+
+    fn writeBytes(self: *BufferWriter, value: []const u8) err.CallError!void {
+        const len: i32 = @intCast(value.len);
+        var len_bytes: [4]u8 = undefined;
+        std.mem.writeInt(i32, &len_bytes, len, .big);
+        @memcpy(self.bytes[self.pos .. self.pos + 4], len_bytes[0..]);
+        self.pos += 4;
+        @memcpy(self.bytes[self.pos .. self.pos + value.len], value);
+        self.pos += value.len;
+    }
+};
+
+fn keyRangeEncodedLen(range: KeyRange) err.CallError!usize {
+    var total_len: usize = 0;
+    total_len = try addOptionalBytesLen(total_len, range.start);
+    total_len += 1;
+    total_len = try addOptionalBytesLen(total_len, range.end);
+    total_len += 1;
+    return total_len;
+}
+
+fn addOptionalBytesLen(base: usize, value: ?[]const u8) err.CallError!usize {
+    var total = base + 1;
+    if (value) |bytes| {
+        if (bytes.len > std.math.maxInt(i32)) {
+            return error.BufferTooLarge;
+        }
+        total += 4 + bytes.len;
+    }
+    return total;
 }

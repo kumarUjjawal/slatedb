@@ -18,10 +18,14 @@ const checksums = struct {
     const method_db_delete = 34129;
     const method_db_get = 50068;
     const method_db_put = 59996;
+    const method_db_scan = 38146;
+    const method_db_scan_prefix = 16589;
     const method_db_shutdown = 43377;
     const method_db_snapshot = 13313;
     const method_db_status = 55824;
     const method_db_write = 13969;
+    const method_dbiterator_next = 49160;
+    const method_dbiterator_seek = 43547;
     const method_dbsnapshot_get = 37663;
     const method_dbtransaction_commit = 17358;
     const method_dbtransaction_get = 27661;
@@ -88,6 +92,16 @@ pub fn ensureCompatible() err.CallError!void {
         c.uniffi_slatedb_uniffi_checksum_method_db_put(),
     );
     try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_scan",
+        checksums.method_db_scan,
+        c.uniffi_slatedb_uniffi_checksum_method_db_scan(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_scan_prefix",
+        checksums.method_db_scan_prefix,
+        c.uniffi_slatedb_uniffi_checksum_method_db_scan_prefix(),
+    );
+    try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_shutdown",
         checksums.method_db_shutdown,
         c.uniffi_slatedb_uniffi_checksum_method_db_shutdown(),
@@ -111,6 +125,16 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get",
         checksums.method_dbsnapshot_get,
         c.uniffi_slatedb_uniffi_checksum_method_dbsnapshot_get(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbiterator_next",
+        checksums.method_dbiterator_next,
+        c.uniffi_slatedb_uniffi_checksum_method_dbiterator_next(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_dbiterator_seek",
+        checksums.method_dbiterator_seek,
+        c.uniffi_slatedb_uniffi_checksum_method_dbiterator_seek(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_dbtransaction_commit",
