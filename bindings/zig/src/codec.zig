@@ -1,5 +1,6 @@
 const std = @import("std");
 const err = @import("error.zig");
+const metrics = @import("metrics.zig");
 const rust_buffer = @import("rust_buffer.zig");
 const types = @import("types.zig");
 
@@ -126,6 +127,54 @@ pub fn decodeOptionalRowEntry(
         1 => try decodeRowEntry(allocator, reader),
         else => unexpectedEnumTag(),
     };
+}
+
+pub fn decodeOwnedString(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)![]u8 {
+    const value = try decodeString(reader);
+    return allocator.dupe(u8, value);
+}
+
+pub fn decodeIntMetricsSnapshot(
+    allocator: std.mem.Allocator,
+    reader: *BufferReader,
+) (std.mem.Allocator.Error || err.CallError)!metrics.IntMetricsSnapshot {
+    const len = try reader.readI32();
+    if (len < 0) {
+        return unexpectedRustBufferData();
+    }
+
+    const count: usize = @intCast(len);
+    var entries: []metrics.IntMetric = &.{};
+    if (count > 0) {
+        entries = try allocator.alloc(metrics.IntMetric, count);
+    }
+    errdefer if (entries.len > 0) allocator.free(entries);
+
+    var initialized: usize = 0;
+    errdefer {
+        for (entries[0..initialized]) |entry| {
+            allocator.free(entry.name);
+        }
+    }
+
+    while (initialized < count) {
+        const name = try decodeOwnedString(allocator, reader);
+        var keep_name = true;
+        errdefer if (keep_name) allocator.free(name);
+
+        const value = try reader.readI64();
+        entries[initialized] = .{
+            .name = name,
+            .value = value,
+        };
+        initialized += 1;
+        keep_name = false;
+    }
+
+    return .{ .entries = entries };
 }
 
 pub fn encodeKeyRange(range: KeyRange) (std.mem.Allocator.Error || err.CallError)!rust_buffer.RustBuffer {

@@ -5,6 +5,7 @@ const db_snapshot = @import("db_snapshot.zig");
 const db_transaction = @import("db_transaction.zig");
 const ffi = @import("ffi.zig");
 const iterator = @import("iterator.zig");
+const metrics_api = @import("metrics.zig");
 const object_handle = @import("object_handle.zig");
 const rust_buffer = @import("rust_buffer.zig");
 const rust_call = @import("rust_call.zig");
@@ -758,6 +759,32 @@ pub const Db = struct {
         );
         const raw_iterator = try rust_future.waitPointer(future);
         return iterator.DbIterator.fromRaw(raw_iterator);
+    }
+
+    pub fn metrics(
+        self: *Db,
+        allocator: std.mem.Allocator,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!metrics_api.IntMetricsSnapshot {
+        try ffi.ensureCompatible();
+
+        const db_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        var status_info = std.mem.zeroes(ffi.c.RustCallStatus);
+        var result_buffer = rust_buffer.RustBuffer{
+            .raw = ffi.c.uniffi_slatedb_uniffi_fn_method_db_metrics(
+                db_handle,
+                &status_info,
+            ),
+        };
+        defer result_buffer.deinit();
+        try rust_call.checkStatus(status_info);
+
+        var reader = codec.BufferReader.init(result_buffer.bytes());
+        var metrics_snapshot = try codec.decodeIntMetricsSnapshot(allocator, &reader);
+        errdefer metrics_snapshot.deinit(allocator);
+        try reader.finish();
+        return metrics_snapshot;
     }
 
     pub fn delete(

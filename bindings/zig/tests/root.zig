@@ -7,5 +7,6 @@ test {
     _ = @import("scan_test.zig");
     _ = @import("reader_test.zig");
     _ = @import("txn_test.zig");
+    _ = @import("metrics_test.zig");
     _ = @import("wal_test.zig");
 }

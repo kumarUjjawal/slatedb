@@ -25,6 +25,7 @@ const checksums = struct {
     const method_db_get_key_value = 57684;
     const method_db_get_key_value_with_options = 20648;
     const method_db_get_with_options = 20501;
+    const method_db_metrics = 63278;
     const method_db_put = 59996;
     const method_db_put_with_options = 58268;
     const method_dbreader_get = 22886;
@@ -159,6 +160,11 @@ pub fn ensureCompatible() err.CallError!void {
         "uniffi_slatedb_uniffi_checksum_method_db_get_with_options",
         checksums.method_db_get_with_options,
         c.uniffi_slatedb_uniffi_checksum_method_db_get_with_options(),
+    );
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_method_db_metrics",
+        checksums.method_db_metrics,
+        c.uniffi_slatedb_uniffi_checksum_method_db_metrics(),
     );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_method_db_put",

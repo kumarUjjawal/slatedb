@@ -14,6 +14,8 @@ pub const ReaderOptions = @import("config.zig").ReaderOptions;
 pub const ScanOptions = @import("config.zig").ScanOptions;
 pub const Ttl = @import("config.zig").Ttl;
 pub const WriteOptions = @import("config.zig").WriteOptions;
+pub const IntMetric = @import("metrics.zig").IntMetric;
+pub const IntMetricsSnapshot = @import("metrics.zig").IntMetricsSnapshot;
 pub const ffi = @import("ffi.zig");
 pub const WriteHandle = @import("types.zig").WriteHandle;
 pub const KeyRange = @import("types.zig").KeyRange;
@@ -40,6 +42,7 @@ test {
     _ = @import("rust_buffer.zig");
     _ = @import("rust_call.zig");
     _ = @import("rust_future.zig");
+    _ = @import("metrics.zig");
     _ = @import("object_store.zig");
     _ = @import("builder.zig");
     _ = @import("db.zig");
