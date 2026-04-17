@@ -7,7 +7,15 @@ Current scope:
 - links against the existing `slatedb-uniffi` shared library
 - uses the checked-in UniFFI C header
 - validates the UniFFI contract version and the first API checksums
-- includes a small Zig test that proves the binding links and can call the ABI
+- supports a first blocking smoke path:
+  - `ObjectStore.resolve`
+  - `DbBuilder.init`
+  - `DbBuilder.buildBlocking`
+  - `Db.status`
+  - `Db.putBlocking`
+  - `Db.getBlocking`
+  - `Db.deleteBlocking`
+  - `Db.shutdownBlocking`
 
 ## Zig Version
 
@@ -52,6 +60,6 @@ zig build test -Dslatedb-lib-dir=/absolute/path/to/target/debug
 
 This is an early handwritten binding over the UniFFI C ABI.
 
-- the scaffold, header import, and ABI checks are in place
+- the first blocking database path is implemented
 - native Zig `async/await` wrappers are still planned
 - wider API parity with the Go binding is still in progress
