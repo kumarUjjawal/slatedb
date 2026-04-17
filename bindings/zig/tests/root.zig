@@ -9,4 +9,5 @@ test {
     _ = @import("txn_test.zig");
     _ = @import("metrics_test.zig");
     _ = @import("wal_test.zig");
+    _ = @import("logging_test.zig");
 }

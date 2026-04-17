@@ -10,6 +10,7 @@ const bindings_contract_version: u32 = 29;
 var abi_checked = false;
 
 const checksums = struct {
+    const func_init_logging = 20973;
     const constructor_objectstore_resolve = 27737;
     const constructor_dbbuilder_new = 20774;
     const constructor_dbreaderbuilder_new = 63705;
@@ -92,6 +93,11 @@ pub fn ensureCompatible() err.CallError!void {
         return error.ContractVersionMismatch;
     }
 
+    try expectChecksum(
+        "uniffi_slatedb_uniffi_checksum_func_init_logging",
+        checksums.func_init_logging,
+        c.uniffi_slatedb_uniffi_checksum_func_init_logging(),
+    );
     try expectChecksum(
         "uniffi_slatedb_uniffi_checksum_constructor_objectstore_resolve",
         checksums.constructor_objectstore_resolve,
