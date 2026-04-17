@@ -132,6 +132,9 @@ Iterators, batches, and exported types:
 - supports `DbIterator.nextBlocking`
 - supports `DbIterator.seek`
 - supports `DbIterator.seekBlocking`
+- exports `CallErrorDetail`
+- supports `takeLastCallErrorDetail`
+- supports `clearLastCallErrorDetail`
 - exports `KeyRange`
 - exports `KeyValue`
 - exports `DurabilityLevel`
@@ -152,7 +155,6 @@ Iterators, batches, and exported types:
 
 ## What Is Next
 
-- richer typed error details
 - metrics support
 - logging and merge-operator callbacks
 - WAL reader support
@@ -201,6 +203,27 @@ If your runtime loader still cannot find `libslatedb_uniffi`, set
 `LD_LIBRARY_PATH` on Linux or `DYLD_LIBRARY_PATH` on macOS before running
 `zig build test`.
 
+## Error Details
+
+Calls still return normal Zig error sets like `error.Invalid` or `error.Closed`.
+If you need the typed payload from the last SlateDB call, take it right after
+the failing call.
+
+Example:
+
+```zig
+var put_future = db.put(io, "", "value");
+try std.testing.expectError(error.Invalid, put_future.await(io));
+
+var detail = (try slatedb.takeLastCallErrorDetail(std.testing.allocator)).?;
+defer detail.deinit(std.testing.allocator);
+
+switch (detail) {
+    .invalid => |message| std.debug.print("invalid: {s}\n", .{message}),
+    else => unreachable,
+}
+```
+
 ## Async Style
 
 With Zig `0.16.0`, the async path uses `std.Io.Future` and `future.await(io)`.
@@ -233,6 +256,6 @@ defer if (value) |bytes| std.heap.smp_allocator.free(bytes);
 ## Current Status
 
 The Zig binding now covers the main async and blocking database path, option
-structs and option-based methods, reader reads and scans, write batches,
-snapshots, transactions, iterators, and Linux CI. It is still behind the Go
-binding for richer typed errors, metrics, callbacks, and WAL support.
+structs and option-based methods, typed call error details, reader reads and
+scans, write batches, snapshots, transactions, iterators, and Linux CI. It is
+still behind the Go binding for metrics, callbacks, and WAL support.
