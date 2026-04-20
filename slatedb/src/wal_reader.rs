@@ -236,10 +236,34 @@ mod tests {
 
     use super::*;
     use crate::config::{FlushOptions, FlushType, PutOptions, WriteOptions};
+    use crate::db_state::SsTableId;
+    use crate::format::sst::SsTableFormat;
+    use crate::instrumented_object_store::stats::REQUEST_COUNT;
+    use crate::instrumented_object_store::{InstrumentedObjectStore, ObjectStoreComponent};
+    use crate::object_stores::ObjectStoreType;
+    use crate::object_stores::ObjectStores;
+    use crate::tablestore::TableStore;
     use crate::test_utils::StringConcatMergeOperator;
-    use crate::types::ValueDeletable;
+    use crate::types::{RowEntry, ValueDeletable};
     use crate::Db;
     use object_store::memory::InMemory;
+    use slatedb_common::metrics::{lookup_metric_with_labels, test_recorder_helper};
+
+    fn request_labels(api: &'static str) -> [(&'static str, &'static str); 4] {
+        [
+            ("component", "reader"),
+            ("store_type", "wal"),
+            ("op", "get"),
+            ("api", api),
+        ]
+    }
+
+    fn request_count(
+        recorder: &slatedb_common::metrics::DefaultMetricsRecorder,
+        api: &'static str,
+    ) -> i64 {
+        lookup_metric_with_labels(recorder, REQUEST_COUNT, &request_labels(api)).unwrap_or(0)
+    }
 
     fn has_not_found_object_store_source(err: &crate::Error) -> bool {
         err.source()
@@ -301,6 +325,68 @@ mod tests {
             &rows[1].value,
             ValueDeletable::Value(value) if value.as_ref() == b"v1"
         ));
+    }
+
+    #[tokio::test]
+    async fn test_iterator_avoids_head_and_limits_reads_for_single_block_wal() {
+        let (recorder, helper) = test_recorder_helper();
+        let inner: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
+        let wal_store: Arc<dyn ObjectStore> = Arc::new(InstrumentedObjectStore::new(
+            inner,
+            &helper,
+            ObjectStoreComponent::Reader,
+            ObjectStoreType::Wal,
+        ));
+        let path = Path::from("/test_wal_reader_request_count");
+        let table_store = TableStore::new(
+            ObjectStores::new(wal_store.clone(), None),
+            SsTableFormat::default(),
+            path.clone(),
+            None,
+        );
+
+        let mut builder = table_store.wal_table_builder();
+        builder
+            .add(RowEntry::new_value(b"k1", b"v1", 1))
+            .await
+            .unwrap();
+        let encoded = builder.build().await.unwrap();
+        table_store
+            .write_sst(&SsTableId::Wal(1), encoded, false)
+            .await
+            .unwrap();
+
+        let get_before = request_count(recorder.as_ref(), "get");
+        let get_range_before = request_count(recorder.as_ref(), "get_range");
+        let head_before = request_count(recorder.as_ref(), "head");
+
+        let wal_file = WalReader::new(path, wal_store)
+            .list(..)
+            .await
+            .unwrap()
+            .into_iter()
+            .next()
+            .expect("expected one WAL file");
+        let mut iter = wal_file.iterator().await.unwrap();
+        let entry = iter.next().await.unwrap().expect("expected one WAL entry");
+        assert_eq!(entry.key.as_ref(), b"k1");
+        assert!(matches!(
+            entry.value,
+            ValueDeletable::Value(value) if value.as_ref() == b"v1"
+        ));
+        assert!(iter.next().await.unwrap().is_none());
+
+        let get_reads = request_count(recorder.as_ref(), "get") - get_before;
+        let get_range_reads = request_count(recorder.as_ref(), "get_range") - get_range_before;
+        let head_reads = request_count(recorder.as_ref(), "head") - head_before;
+        let total_reads = get_reads + get_range_reads + head_reads;
+
+        assert_eq!(head_reads, 0);
+        assert!(
+            total_reads <= 4,
+            "expected at most 4 object-store reads for a single-block WAL, got \
+             {total_reads} (get={get_reads}, get_range={get_range_reads}, head={head_reads})"
+        );
     }
 
     #[tokio::test]

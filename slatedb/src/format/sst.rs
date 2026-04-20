@@ -629,13 +629,10 @@ impl SsTableFormat {
         &self,
         obj: &impl ReadOnlyBlob,
     ) -> Result<LengthOffsetAndVersion, SlateDBError> {
-        let obj_len = obj.len().await?;
+        let (header, obj_len) = obj.read_suffix(NUM_FOOTER_BYTES_LONG).await?;
         if obj_len <= NUM_FOOTER_BYTES_LONG {
             return Err(SlateDBError::EmptySSTable);
         }
-        let header = obj
-            .read_range((obj_len - NUM_FOOTER_BYTES_LONG)..obj_len)
-            .await?;
         assert_eq!(header.len(), NUM_FOOTER_BYTES);
 
         let version = header.slice(8..NUM_FOOTER_BYTES).get_u16();

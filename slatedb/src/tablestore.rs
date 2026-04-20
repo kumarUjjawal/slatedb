@@ -9,7 +9,7 @@ use futures::{future::join_all, StreamExt};
 use log::{debug, warn};
 use object_store::buffered::BufWriter;
 use object_store::path::Path;
-use object_store::{ObjectStore, PutMode, PutOptions};
+use object_store::{GetOptions, GetRange, ObjectStore, PutMode, PutOptions};
 use tokio::io::AsyncWriteExt;
 use ulid::Ulid;
 
@@ -52,6 +52,22 @@ impl ReadOnlyBlob for ReadOnlyObject {
     async fn read_range(&self, range: Range<u64>) -> Result<Bytes, SlateDBError> {
         let bytes = self.object_store.get_range(&self.path, range).await?;
         Ok(bytes)
+    }
+
+    async fn read_suffix(&self, suffix: u64) -> Result<(Bytes, u64), SlateDBError> {
+        let result = self
+            .object_store
+            .get_opts(
+                &self.path,
+                GetOptions {
+                    range: Some(GetRange::Suffix(suffix)),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let len = result.meta.size;
+        let bytes = result.bytes().await?;
+        Ok((bytes, len))
     }
 
     async fn read(&self) -> Result<Bytes, SlateDBError> {
